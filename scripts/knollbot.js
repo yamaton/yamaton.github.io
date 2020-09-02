@@ -1,42 +1,6 @@
 "use strict";
 var knollbot;
 (function (knollbot) {
-    const imgPaths = [
-        "images/blue_1x2.png",
-        "images/blue_1x2.png",
-        "images/blue_1x2.png",
-        "images/blue_1x2.png",
-        "images/blue_1x2.png",
-        "images/blue_1x3.png",
-        "images/blue_1x3.png",
-        "images/green_1x2.png",
-        "images/green_1x2.png",
-        "images/green_1x2.png",
-        "images/green_1x2.png",
-        "images/green_2x2.png",
-        "images/green_2x2.png",
-        "images/orange_2x1.png",
-        "images/orange_2x1.png",
-        "images/orange_2x1.png",
-        "images/orange_2x1.png",
-        "images/orange_2x1.png",
-        "images/orange_2x1.png",
-        "images/orange_2x3.png",
-        "images/orange_2x3.png",
-        "images/red_1x4.png",
-        "images/red_1x4.png",
-        "images/red_1x4.png",
-        "images/red_2x2.png",
-        "images/red_2x2.png",
-        "images/yellow_2x1.png",
-        "images/yellow_2x1.png",
-        "images/yellow_2x1.png",
-        "images/yellow_2x1.png",
-        "images/yellow_2x1.png",
-        "images/yellow_3x2.png",
-        "images/yellow_3x2.png",
-        "images/yellow_3x2.png",
-    ];
     knollbot.main = () => {
         // create an engine and runner
         const engine = Matter.Engine.create();
@@ -44,6 +8,10 @@ var knollbot;
         const runner = Matter.Runner.create();
         // disable gravity
         world.gravity.y = 0.0;
+        // get image paths
+        const imgPaths = config.imgPaths;
+        // parameters as Config
+        const Config = config.Config;
         // --------------------------------------
         // Screen parameters
         const ScreenWidth = document.documentElement.clientWidth - 20;
@@ -59,20 +27,16 @@ var knollbot;
         // Object parameters
         const NumBoxes = imgPaths.length;
         // --------------------------------------
-        // Body parameters
-        const FrictionAir = 0.01;
-        const Friction = 0.0;
-        const WallFriction = 0.01;
         // Random poking
-        world.pokeScale = 0.05;
+        world.pokeScale = Config.pokeScale;
         // Alignment force
-        world.alignmentForceCoeff = 0.0010;
-        world.alignmentForceRange = 30; // pixels
+        world.alignmentForceCoeff = Config.alignmentForceCoeff;
+        world.alignmentForceRange = Config.alignmentForceRange; // pixels
         // AntiGravity force
-        world.repulsionCoeff = 100;
-        world.repulsionRange = 3.0; // NOT pixels
+        world.repulsionCoeff = Config.repulsionCoeff;
+        world.repulsionRange = Config.repulsionRange; // NOT pixels
         // Grouping attraction/repulsion
-        world.groupingCoeff = 400;
+        world.groupingCoeff = Config.groupingCoeff;
         // --------------------------------------
         // create a renderer
         const render = Matter.Render.create({
@@ -90,8 +54,8 @@ var knollbot;
         // create two boxes
         const bodyOptions = {
             inertia: Infinity,
-            frictionAir: FrictionAir,
-            friction: Friction,
+            frictionAir: Config.frictionAir,
+            friction: Config.friction,
         };
         // // generate boxes randomly
         // const generateRandomBoxes = (): Matter.Body[] => {
@@ -139,7 +103,7 @@ var knollbot;
         // surrounding wall
         const wallOptions = {
             isStatic: true,
-            friction: WallFriction,
+            friction: config.Config.wallFriction,
         };
         const wallTop = Matter.Bodies.rectangle(ScreenWidthHalf, -WallOffset, ScreenWidth + WallMargin, WallThickness, wallOptions);
         const wallBottom = Matter.Bodies.rectangle(ScreenWidthHalf, ScreenHeight + WallOffset, ScreenWidth + WallMargin, WallThickness, wallOptions);
@@ -307,7 +271,7 @@ var knollbot;
                 applyAntiGravityDisjoint(blocks, ufX, ufY);
             }
             if (counter % 10 == 9) {
-                world.pokeScale *= 0.97;
+                world.pokeScale *= Config.pokeScaleDecay;
             }
             blocks.forEach(applyRandomPoke);
         });
