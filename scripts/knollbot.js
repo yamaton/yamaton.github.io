@@ -282,7 +282,7 @@ var knollbot;
                 Matter.World.add(world, mouseConstraint);
                 Matter.Runner.run(runner, engine);
                 Matter.Render.run(render);
-            }, 100);
+            }, 500);
         };
         setupWorld();
         // Rotate a block by double clicking
