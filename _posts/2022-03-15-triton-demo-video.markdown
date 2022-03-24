@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  Triton Notebook demo video
+title:  Triton Notebook demo
 date:   2022-03-15 8:00 -0500
 categories: triton update
 ---
