@@ -16,8 +16,7 @@ There is no such thing as a knob in command-line interfaces. It's like you're su
 ![](https://3.bp.blogspot.com/-nfvzHic2lZg/WaPv4asdR6I/AAAAAAABGQQ/AUX7A8cNNNIcjXIbM-2AnbiTUt2_KQUcgCLcBGAs/s400/math_hypercube.png)
 
 
-
-This [xkcd comic](https://xkcd.com/1168/) beautifully depicts the situation. ([Here](https://www.explainxkcd.com/wiki/index.php/1168:_tar) is an explanation if you don't get it.)
+This [xkcd comic](https://xkcd.com/1168/) depicts the situation beautifully. ([Here](https://www.explainxkcd.com/wiki/index.php/1168:_tar) is an explanation if you don't get it.)
 
 
 [![](https://imgs.xkcd.com/comics/tar_2x.png)](https://xkcd.com/1168/)
@@ -28,15 +27,16 @@ Libraries of programming languages are in a better position thanks to IDEs. IDEs
 
 [![IntelliSense in Visual Studio Code](https://code.visualstudio.com/assets/docs/editor/intellisense/intellisense.gif)](https://code.visualstudio.com/docs/editor/intellisense)
 
-In terminal, [fish shell](https://fishshell.com/) provides the best autocompletion as far as I know. But fish-shell script has to be supplied separately to each command to make it work, and they are mostly done by opensource participants. Because such manual work is required, the number of supported commands is limited to 845 as of today.
 
-So, we created a parser and translation program generating shell completion scripts from manpages and help texts. This tool is currently applied to bioinformatics tools. We currently support 244 programs and release [fish scripts](https://github.com/yamaton/fish-completions-bio) and [zsh scripts](https://github.com/yamaton/zsh-completions-bio).
+On a terminal, [Fish shell](https://fishshell.com/) provides the best autocompletion as far as I know. But fish-shell script has to be prepared for each command to achieve autocompletion, and they are mostly done by open-source participants. Because such manual work is required, the number of supported commands is limited.
+
+
+So we created a parser program extracting command specs from manpages and help texts. Then we generated data for autocompletion for bioinformatics tools. Currently, 244 shell completion scripts are available for [fish](https://github.com/yamaton/fish-completions-bio) and [zsh](https://github.com/yamaton/zsh-completions-bio).
 
 ![](https://user-images.githubusercontent.com/256288/154600277-a4d936b0-d7b0-4406-aab6-e4d953a8d64c.gif)
 
-We have applied the command specs to make the autocomplete and introspection available on Visual Studio Code in shell script mode.
+We have further applied the command specs to make the autocomplete and introspection available on Visual Studio Code in shell script mode.
 
 [![](https://raw.githubusercontent.com/yamaton/vscode-h2o/main/images/demo-mouseover.gif)](https://marketplace.visualstudio.com/items?itemName=tetradresearch.vscode-h2o)
 
-
-Autocomplete is important, yet just one of many factors making command-line programs discoverable and learnable. We are still on a way.
+Autocomplete is just one of many factors making command-line programs discoverable and learnable. We are still on the way.
