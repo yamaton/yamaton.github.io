@@ -6,7 +6,7 @@ permalink: /sentiment_quorum/privacy/
 
 ## Privacy Policy for Sentiment Quorum
 
-**Effective Date: July 25, 2025**
+**Effective Date: August 14, 2025**
 
 ### 1. Introduction
 
@@ -36,17 +36,17 @@ Your information is used for no other purpose.
 
 ### 4. Information Sharing and Disclosure
 
-Your privacy is paramount. Our policy on sharing your information is simple and unambiguous.
+Your privacy is paramount. We adhere to a strict policy regarding the sharing of your information.
 
-> **We do not share, sell, rent, or trade your personal information, including your mobile phone number, with any third parties for their marketing or promotional purposes.**
+**No Sharing with Third Parties:** Your personal information, including your mobile phone number and mobile opt-in data, will not be shared with, sold to, rented to, or traded with any third parties or affiliates for any purpose.
 
-The only exception to this rule is if we are required to disclose information to comply with a legal obligation, such as a court order or subpoena.
+**Legal Obligations:** The only exception is if we are required to disclose your information to comply with a legal obligation, such as a court order, subpoena, or other lawful government request.
 
 ### 5. Data Retention
 
 We believe that personal data should not be stored indefinitely. In line with this principle:
 
-**All personally identifiable information, including your phone number and associated vote data, is permanently deleted from our live systems shortly after the meeting poll is concluded and the final result has been communicated to all participants.**
+All personally identifiable information, including your phone number and associated vote data, is permanently deleted from our live systems shortly after the meeting poll is concluded and the final result has been communicated to all participants.
 
 ### 6. Your Privacy Rights and Choices
 
@@ -71,6 +71,10 @@ We may update this Privacy Policy from time to time. We will notify you of any c
 
 If you have any questions or concerns about this Privacy Policy or our data practices, please contact us:
 
-**Triton Lab, LLC** 2203 Spring Walk Ct.
+
+**Triton Lab, LLC**
+
+2203 Spring Walk Ct.
 Chamblee, GA 30341
+
 Email: yamato.matsuoka@tritonlab.io
