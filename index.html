@@ -136,7 +136,7 @@ section { padding: var(--section-py) 0; }
 /* ── Problem ──────────────────────────────────────────── */
 #problem { background: var(--gray-50); }
 .problem-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  display: grid; grid-template-columns: repeat(2, 1fr);
   gap: 24px; margin-top: 48px;
 }
 .problem-card {
@@ -260,6 +260,7 @@ footer {
   .hero { padding: 120px 0 80px; }
   .hero-stats { gap: 24px; }
   .hero-stat .num { font-size: 28px; }
+  .problem-grid { grid-template-columns: 1fr; }
   .solution-cols { grid-template-columns: 1fr; }
   .usecase-grid { grid-template-columns: 1fr; }
   .data-metrics { grid-template-columns: repeat(2, 1fr); }
