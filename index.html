@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Triton Lab — 法令 × AI</title>
-<meta name="description" content="Triton Lab: AIエージェントのための法令データ基盤。9,500法令・495万文を即時検索・構造化・可視化。">
+<title>法脈（Houmyaku） — 法令メタデータ基盤 | Triton Lab</title>
+<meta name="description" content="法脈: 法令の参照関係129万エッジ・読替エンジン・委任先自動解決を備えた法令メタデータ基盤。9,500法令を構造化し、AIエージェントと人間の双方に提供。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -61,7 +61,8 @@ nav.scrolled { box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
   height: 64px;
 }
 .nav-logo { font-size: 18px; font-weight: 700; color: var(--navy); text-decoration: none; letter-spacing: -0.02em; }
-.nav-logo span { color: var(--blue); }
+.nav-logo span { color: var(--blue); font-style: normal; }
+.nav-logo .product-name { font-size: 16px; color: var(--gray-600); font-weight: 500; margin-left: 8px; }
 .nav-links { display: flex; gap: 32px; align-items: center; }
 .nav-links a {
   font-size: 14px; font-weight: 500; color: var(--gray-600);
@@ -275,7 +276,7 @@ footer {
 <!-- ═══ Navigation ═══ -->
 <nav id="navbar">
   <div class="nav-inner">
-    <a href="#" class="nav-logo">Triton<span>Lab</span></a>
+    <a href="#" class="nav-logo">Triton<span>Lab</span><span class="product-name">法脈</span></a>
     <div class="nav-links">
       <a href="#problem">
         <span class="lang-ja">課題</span>
@@ -302,16 +303,16 @@ footer {
 <section class="hero" id="hero">
   <div class="container">
     <div class="hero-badge">
-      <span class="lang-ja">法令 × AI</span>
-      <span class="lang-en">Law × AI</span>
+      <span class="lang-ja">Triton Lab</span>
+      <span class="lang-en">Triton Lab</span>
     </div>
     <h1>
-      <span class="lang-ja">AIが法令を<em>正確に</em>扱える<br>インフラを</span>
-      <span class="lang-en">Infrastructure for AI<br>to handle law <em>accurately</em></span>
+      <span class="lang-ja"><em>法脈</em><br>法令メタデータ基盤</span>
+      <span class="lang-en"><em>Houmyaku</em><br>Legal Metadata Platform</span>
     </h1>
     <p class="hero-sub">
-      <span class="lang-ja">日本の全法令を構造化し、AIエージェントと人間の双方が<br>即座に検索・参照・分析できるデータ基盤を提供します。</span>
-      <span class="lang-en">We structure all Japanese legislation into a data platform<br>that both AI agents and humans can instantly search, reference, and analyze.</span>
+      <span class="lang-ja">法令間の参照関係129万エッジ、読替エンジン、委任先自動解決。<br>AIエージェントと人間の双方に、構造化された法令データを提供します。</span>
+      <span class="lang-en">1.29M inter-law relationship edges, substitution engine, automated delegation resolution.<br>Structured legal data for both AI agents and humans.</span>
     </p>
     <div class="btn-group">
       <a href="#contact" class="btn btn-primary">
@@ -325,24 +326,24 @@ footer {
     </div>
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="num">9,500+</div>
+        <div class="num">9,450</div>
         <div class="label">
           <span class="lang-ja">収録法令</span>
           <span class="lang-en">Laws Covered</span>
         </div>
       </div>
       <div class="hero-stat">
-        <div class="num">4.95M</div>
-        <div class="label">
-          <span class="lang-ja">文（センテンス）</span>
-          <span class="lang-en">Sentences</span>
-        </div>
-      </div>
-      <div class="hero-stat">
-        <div class="num">640K</div>
+        <div class="num">1.29M</div>
         <div class="label">
           <span class="lang-ja">関係エッジ</span>
           <span class="lang-en">Relationship Edges</span>
+        </div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">69K</div>
+        <div class="label">
+          <span class="lang-ja">ガイドライン</span>
+          <span class="lang-en">Guidelines</span>
         </div>
       </div>
       <div class="hero-stat">
@@ -428,12 +429,12 @@ footer {
       <span class="lang-en">Solution</span>
     </div>
     <h2 class="section-title">
-      <span class="lang-ja">AIと人間の双方に、構造化された法令データを</span>
-      <span class="lang-en">Structured legal data for both AI and humans</span>
+      <span class="lang-ja">法脈が提供する2つのインターフェース</span>
+      <span class="lang-en">Two interfaces from Houmyaku</span>
     </h2>
     <p class="section-desc">
-      <span class="lang-ja">e-Gov公開の法令XMLを構造化データベースに変換し、法令間の関係をグラフとして事前計算。<br>2つの利用者に最適化されたインターフェースを提供します。</span>
-      <span class="lang-en">We transform e-Gov's published XML into a structured database with pre-computed relationship graphs, serving two user personas through optimized interfaces.</span>
+      <span class="lang-ja">e-Gov公開の法令XMLから参照関係129万エッジ・読替規定・委任先・経過規定を自動構築。<br>AIエージェントと人間の双方に最適化されたインターフェースを提供します。</span>
+      <span class="lang-en">Automatically builds 1.29M relationship edges, substitution rules, delegation targets, and transitional provisions from e-Gov XML.<br>Optimized interfaces for both AI agents and humans.</span>
     </p>
     <div class="solution-cols">
       <div class="solution-card ai">
@@ -447,16 +448,16 @@ footer {
         </p>
         <ul class="feature-list">
           <li><span class="check">✓</span>
-            <span class="lang-ja">0.3秒の全文横断検索（9,500法令・400MB）</span>
-            <span class="lang-en">0.3s full-text search across 9,500 laws (400MB)</span>
+            <span class="lang-ja">0.3秒の全文横断検索（9,450法令・レンマ展開対応）</span>
+            <span class="lang-en">0.3s full-text search across 9,450 laws (with lemma expansion)</span>
           </li>
           <li><span class="check">✓</span>
-            <span class="lang-ja">条文→委任先→施行規則をワンコマンドで展開</span>
-            <span class="lang-en">Expand article → delegation → enforcement rules in one command</span>
+            <span class="lang-ja">条文→委任先→施行規則をワンコマンドで展開（10,757件の委任解決済み）</span>
+            <span class="lang-en">Expand article → delegation → rules in one command (10,757 delegations resolved)</span>
           </li>
           <li><span class="check">✓</span>
-            <span class="lang-ja">罰則・読替え・経過措置・ガイドラインを一括取得</span>
-            <span class="lang-en">Retrieve penalties, substitutions, transitional provisions, and guidelines at once</span>
+            <span class="lang-ja">罰則・読替え・準用読替・経過措置・ガイドラインを一括取得</span>
+            <span class="lang-en">Retrieve penalties, substitutions, junyo, transitional provisions, and guidelines at once</span>
           </li>
           <li><span class="check">✓</span>
             <span class="lang-ja">全出力がJSON構造化 — AIが正確にパース可能</span>
@@ -557,12 +558,12 @@ footer {
       <span class="lang-en">Comprehensive coverage and precision</span>
     </h2>
     <p class="section-desc">
-      <span class="lang-ja">政府公開データを基盤に、独自の補完処理で欠損を補い、改正法の名称解決率99.99%を達成しています。</span>
-      <span class="lang-en">Built on government-published data, with proprietary gap-filling that achieves 99.99% amendment law name resolution.</span>
+      <span class="lang-ja">政府公開データを基盤に、独自の補完処理で欠損を補い、改正法の名称解決率100%を達成。AI（Claude Code）で開発し、1,776件の自動テストと実データ検証で品質を保証しています。</span>
+      <span class="lang-en">Built on government-published data, with proprietary gap-filling that achieves 100% amendment law name resolution. Developed with AI (Claude Code), quality assured by 1,776 automated tests and real-data validation.</span>
     </p>
     <div class="data-metrics">
       <div class="metric">
-        <div class="num">9,500+</div>
+        <div class="num">9,450</div>
         <div class="label">
           <span class="lang-ja">法令</span>
           <span class="lang-en">Laws</span>
@@ -576,21 +577,21 @@ footer {
         </div>
       </div>
       <div class="metric">
-        <div class="num">4.95M</div>
-        <div class="label">
-          <span class="lang-ja">文</span>
-          <span class="lang-en">Sentences</span>
-        </div>
-      </div>
-      <div class="metric">
-        <div class="num">640K</div>
+        <div class="num">1.29M</div>
         <div class="label">
           <span class="lang-ja">関係エッジ</span>
           <span class="lang-en">Edges</span>
         </div>
       </div>
       <div class="metric">
-        <div class="num">455</div>
+        <div class="num">48K</div>
+        <div class="label">
+          <span class="lang-ja">法令名辞書</span>
+          <span class="lang-en">Law Name Dictionary</span>
+        </div>
+      </div>
+      <div class="metric">
+        <div class="num">69K</div>
         <div class="label">
           <span class="lang-ja">ガイドライン</span>
           <span class="lang-en">Guidelines</span>
@@ -723,7 +724,7 @@ footer {
 <!-- ═══ Footer ═══ -->
 <footer>
   <div class="container">
-    <p>&copy; 2026 Triton Lab, LLC.</p>
+    <p>&copy; 2026 Triton Lab, LLC. — 法脈（Houmyaku）</p>
   </div>
 </footer>
 
