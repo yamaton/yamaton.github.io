@@ -225,6 +225,14 @@ section { padding: var(--section-py) 0; }
 .demo-icon { font-size: 32px; margin-bottom: 12px; }
 .demo-card h3 { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 8px; }
 .demo-card p { font-size: 13px; color: var(--gray-400); line-height: 1.6; }
+.demo-card-wide {
+  display: block; max-width: 960px; margin: 0 auto 20px;
+  text-decoration: none; text-align: left;
+}
+.demo-card-wide .demo-icon {
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 24px; color: #9ece6a;
+}
 
 /* ── Contact ──────────────────────────────────────────── */
 #contact { background: var(--gray-50); }
@@ -613,30 +621,30 @@ footer {
       <span class="lang-en">Try it yourself</span>
     </h2>
     <p class="section-desc">
-      <span class="lang-ja">法令の引用ネットワークや委任チェーンを、ブラウザ上でインタラクティブに探索できます。</span>
-      <span class="lang-en">Explore citation networks and delegation chains interactively in your browser.</span>
+      <span class="lang-ja">CLIツールの実出力と、法令グラフのインタラクティブ可視化をブラウザで体験できます。</span>
+      <span class="lang-en">Experience real CLI output and interactive law graph visualizations in your browser.</span>
     </p>
+    <a href="demo/cli_showcase.html" class="demo-card demo-card-wide" target="_blank">
+      <div class="demo-icon">▸_</div>
+      <h3>
+        <span class="lang-ja">CLI ツールデモ</span>
+        <span class="lang-en">CLI Tool Demo</span>
+      </h3>
+      <p>
+        <span class="lang-ja">テキスト検索・委任先フォロー・読替え適用・法令ファミリー — 実際のターミナル出力</span>
+        <span class="lang-en">Text search, delegation follow, yomikae substitution, law family — real terminal output</span>
+      </p>
+    </a>
     <div class="demo-grid">
       <a href="demo/fsa_family.html" class="demo-card" target="_blank">
-        <div class="demo-icon">🌳</div>
-        <h3>
-          <span class="lang-ja">法令ファミリー（大規模）</span>
-          <span class="lang-en">Law Family (Large)</span>
-        </h3>
-        <p>
-          <span class="lang-ja">金融商品取引法 — 80法令の委任ツリー</span>
-          <span class="lang-en">Financial Instruments Act — 80-law delegation tree</span>
-        </p>
-      </a>
-      <a href="demo/privacy_family.html" class="demo-card" target="_blank">
         <div class="demo-icon">🌳</div>
         <h3>
           <span class="lang-ja">法令ファミリー</span>
           <span class="lang-en">Law Family</span>
         </h3>
         <p>
-          <span class="lang-ja">個人情報保護法の施行令・施行規則群</span>
-          <span class="lang-en">Privacy Act — enforcement orders &amp; ordinances</span>
+          <span class="lang-ja">金融商品取引法 — 80法令の委任ツリー</span>
+          <span class="lang-en">Financial Instruments Act — 80-law delegation tree</span>
         </p>
       </a>
       <a href="demo/civil_related.html" class="demo-card" target="_blank">
@@ -650,15 +658,26 @@ footer {
           <span class="lang-en">Civil Code — density-ranked related laws</span>
         </p>
       </a>
-      <a href="demo/labor_related.html" class="demo-card" target="_blank">
-        <div class="demo-icon">🔗</div>
+      <a href="demo/civil_amends.html" class="demo-card" target="_blank">
+        <div class="demo-icon">📅</div>
         <h3>
-          <span class="lang-ja">関連法令</span>
-          <span class="lang-en">Related Laws</span>
+          <span class="lang-ja">改正タイムライン</span>
+          <span class="lang-en">Amendment Timeline</span>
         </h3>
         <p>
-          <span class="lang-ja">労働基準法 — 改正法・関連Act・廃止法</span>
-          <span class="lang-en">Labor Standards Act — amendments, related Acts, repeals</span>
+          <span class="lang-ja">民法の改正履歴を時間軸で表示</span>
+          <span class="lang-en">Civil Code amendment history on a time axis</span>
+        </p>
+      </a>
+      <a href="demo/labor_art36_xref.html" class="demo-card" target="_blank">
+        <div class="demo-icon">⚡</div>
+        <h3>
+          <span class="lang-ja">条文クロスリファレンス</span>
+          <span class="lang-en">Article Cross-Reference</span>
+        </h3>
+        <p>
+          <span class="lang-ja">労基法第36条（36協定）の法令間参照</span>
+          <span class="lang-en">References to/from Art. 36 (36 Agreement)</span>
         </p>
       </a>
     </div>

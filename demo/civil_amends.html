@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>民法 — 改正履歴</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+       background: #fafafa; overflow: hidden; }
+#header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  background: #fff; border-bottom: 1px solid #ddd; padding: 8px 16px;
+  display: flex; align-items: center; gap: 16px; font-size: 13px;
+}
+#header h1 { font-size: 15px; font-weight: 600; }
+#header .badge {
+  background: #4e79a7; color: #fff; padding: 2px 8px;
+  border-radius: 4px; font-size: 12px;
+}
+#back-btn {
+  display: none; font-size: 12px; padding: 3px 10px; cursor: pointer;
+  border: 1px solid #4e79a7; border-radius: 4px; background: #fff;
+  color: #4e79a7;
+}
+#back-btn:hover { background: #e8f0fa; }
+#controls {
+  position: fixed; top: 50px; right: 12px; z-index: 10;
+  background: #fff; border: 1px solid #ddd; border-radius: 6px;
+  padding: 10px 14px; font-size: 12px; max-width: 240px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+#controls h3 { font-size: 12px; font-weight: 600; margin-bottom: 4px;
+               color: #555; }
+#controls label { display: block; margin: 3px 0; cursor: pointer; }
+#controls label input { margin-right: 4px; }
+.legend-section { margin-top: 8px; border-top: 1px solid #eee;
+                  padding-top: 6px; }
+.legend-item { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.legend-circle { width: 10px; height: 10px; border-radius: 50%;
+                 display: inline-block; }
+.stats { margin-top: 8px; color: #888; border-top: 1px solid #eee;
+         padding-top: 6px; }
+svg { width: 100vw; height: 100vh; }
+#tooltip {
+  position: absolute; display: none; background: rgba(255,255,255,0.97);
+  border: 1px solid #ccc; border-radius: 4px; padding: 8px 12px;
+  font-size: 12px; max-width: 320px; pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12); z-index: 100; line-height: 1.5;
+}
+#tooltip b { font-size: 13px; }
+.tt-sub { color: #888; font-size: 11px; }
+.tt-detail { color: #555; margin-top: 2px; }
+.tt-drill { color: #4e79a7; font-size: 11px; margin-top: 3px; }
+.node-label { font-size: 11px; fill: #333; pointer-events: none; }
+.time-axis { font-size: 11px; }
+.time-axis path, .time-axis line { stroke: #ccc; }
+button.reset { margin-top: 8px; font-size: 11px; padding: 3px 8px;
+               cursor: pointer; border: 1px solid #ccc; border-radius: 3px;
+               background: #fff; }
+button.reset:hover { background: #f0f0f0; }
+#markmap-svg { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: none; }
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>民法 — 改正履歴</h1>
+  <span class="badge">改正履歴</span>
+  <button id="back-btn">&larr; 法令間に戻る</button>
+</div>
+<div id="controls"></div>
+<svg id="graph"></svg>
+<svg id="markmap-svg"></svg>
+<div id="tooltip"></div>
+<script>
+var DATA = {"nodes": [{"id": "明治29年法律第89号", "label": "民法", "law_type": "Act", "law_name": "民法", "law_num": "明治二十九年法律第八十九号", "is_root": true, "amend_date": null, "enforcement_date": "2028-06-13", "category": "民事", "status": "未施行", "article_count": 1173}, {"id": "令和7年法律第57号", "label": "譲渡担保契約及び所有権留保契約に関する法律の施行に伴う関係法律の整備等に関する法律", "law_type": "Act", "law_name": "譲渡担保契約及び所有権留保契約に関する法律の施行に伴う関係法律の整備等に関する法律", "law_num": "令和7年法律第57号", "is_root": false, "amend_date": "2025-06-06"}, {"id": "令和6年法律第33号", "label": "民法等の一部を改正する法律", "law_type": "Act", "law_name": "民法等の一部を改正する法律", "law_num": "令和6年法律第33号", "is_root": false, "amend_date": "2024-05-24"}, {"id": "令和6年法律第30号", "label": "公益信託に関する法律", "law_type": "Act", "law_name": "公益信託に関する法律", "law_num": "令和六年法律第三十号", "is_root": false, "amend_date": "2024-05-22", "enforcement_date": "2026-04-01", "category": "民事", "status": "現行", "article_count": 49}, {"id": "令和6年法律第29号", "label": "公益社団法人及び公益財団法人の認定等に関する法律の一部を改正する法律", "law_type": "Act", "law_name": "公益社団法人及び公益財団法人の認定等に関する法律の一部を改正する法律", "law_num": "令和6年法律第29号", "is_root": false, "amend_date": "2024-05-22"}, {"id": "令和5年法律第53号", "label": "民事関係手続等における情報通信技術の活用等の推進を図るための関係法律の整備に関する法律", "law_type": "Act", "law_name": "民事関係手続等における情報通信技術の活用等の推進を図るための関係法律の整備に関する法律", "law_num": "令和5年法律第53号", "is_root": false, "amend_date": "2023-06-14"}, {"id": "令和4年法律第102号", "label": "民法等の一部を改正する法律", "law_type": "Act", "law_name": "民法等の一部を改正する法律", "law_num": "令和4年法律第102号", "is_root": false, "amend_date": "2022-12-16"}, {"id": "令和4年法律第68号", "label": "刑法等の一部を改正する法律の施行に伴う関係法律の整理等に関する法律", "law_type": "Act", "law_name": "刑法等の一部を改正する法律の施行に伴う関係法律の整理等に関する法律", "law_num": "令和四年法律第六十八号", "is_root": false, "amend_date": "2022-06-17", "enforcement_date": "2027-03-31", "category": "刑事", "status": "未施行", "article_count": 34}, {"id": "令和3年法律第61号", "label": "国家公務員法等の一部を改正する法律", "law_type": "Act", "law_name": "国家公務員法等の一部を改正する法律", "law_num": "令和3年法律第61号", "is_root": false, "amend_date": "2021-06-11"}, {"id": "令和3年法律第37号", "label": "デジタル社会の形成を図るための関係法律の整備に関する法律", "law_type": "Act", "law_name": "デジタル社会の形成を図るための関係法律の整備に関する法律", "law_num": "令和3年法律第37号", "is_root": false, "amend_date": "2021-05-19"}, {"id": "令和3年法律第24号", "label": "民法等の一部を改正する法律", "law_type": "Act", "law_name": "民法等の一部を改正する法律", "law_num": "令和3年法律第24号", "is_root": false, "amend_date": "2021-04-28"}, {"id": "令和1年法律第71号", "label": "会社法の一部を改正する法律の施行に伴う関係法律の整備等に関する法律", "law_type": "Act", "law_name": "会社法の一部を改正する法律の施行に伴う関係法律の整備等に関する法律", "law_num": "令和1年法律第71号", "is_root": false, "amend_date": "2019-12-11"}, {"id": "令和1年法律第34号", "label": "この法律の施行の日が民法等の一部を改正する法律", "law_type": "Act", "law_name": "この法律の施行の日が民法等の一部を改正する法律", "law_num": "令和1年法律第34号", "is_root": false, "amend_date": "2019-06-14"}, {"id": "令和1年法律第2号", "label": "民事執行法及び国際的な子の奪取の民事上の側面に関する条約の実施に関する法律の一部を改正する法律", "law_type": "Act", "law_name": "民事執行法及び国際的な子の奪取の民事上の側面に関する条約の実施に関する法律の一部を改正する法律", "law_num": "令和1年法律第2号", "is_root": false, "amend_date": "2019-05-17"}, {"id": "平成30年法律第72号", "label": "民法及び家事事件手続法の一部を改正する法律", "law_type": "Act", "law_name": "民法及び家事事件手続法の一部を改正する法律", "law_num": "平成30年法律第72号", "is_root": false, "amend_date": "2018-07-13"}, {"id": "平成30年法律第59号", "label": "この法律による改正後の規定及び民法の一部を改正する法律", "law_type": "Act", "law_name": "この法律による改正後の規定及び民法の一部を改正する法律", "law_num": "平成30年法律第59号", "is_root": false, "amend_date": "2018-06-20"}, {"id": "平成29年法律第44号", "label": "民法の一部を改正する法律", "law_type": "Act", "law_name": "民法の一部を改正する法律", "law_num": "平成29年法律第44号", "is_root": false, "amend_date": "2017-06-02"}, {"id": "平成28年法律第71号", "label": "民法の一部を改正する法律", "law_type": "Act", "law_name": "民法の一部を改正する法律", "law_num": "平成28年法律第71号", "is_root": false, "amend_date": "2016-06-07"}, {"id": "平成28年法律第27号", "label": "成年後見の事務の円滑化を図るための民法及び家事事件手続法の一部を改正する法律", "law_type": "Act", "law_name": "成年後見の事務の円滑化を図るための民法及び家事事件手続法の一部を改正する法律", "law_num": "平成28年法律第27号", "is_root": false, "amend_date": "2016-04-13"}, {"id": "平成26年法律第69号", "label": "行政不服審査法の施行に伴う関係法律の整備等に関する法律", "law_type": "Act", "law_name": "行政不服審査法の施行に伴う関係法律の整備等に関する法律", "law_num": "平成26年法律第69号", "is_root": false, "amend_date": "2014-06-13"}, {"id": "平成25年法律第94号", "label": "民法の一部を改正する法律", "law_type": "Act", "law_name": "民法の一部を改正する法律", "law_num": "平成25年法律第94号", "is_root": false, "amend_date": "2013-12-11"}, {"id": "平成23年法律第74号", "label": "情報処理の高度化等に対処するための刑法等の一部を改正する法律", "law_type": "Act", "law_name": "情報処理の高度化等に対処するための刑法等の一部を改正する法律", "law_num": "平成23年法律第74号", "is_root": false, "amend_date": "2011-06-24"}, {"id": "平成23年法律第61号", "label": "民法等の一部を改正する法律", "law_type": "Act", "law_name": "民法等の一部を改正する法律", "law_num": "平成23年法律第61号", "is_root": false, "amend_date": "2011-06-03"}, {"id": "平成23年法律第53号", "label": "非訟事件手続法及び家事事件手続法の施行に伴う関係法律の整備等に関する法律", "law_type": "Act", "law_name": "非訟事件手続法及び家事事件手続法の施行に伴う関係法律の整備等に関する法律", "law_num": "平成23年法律第53号", "is_root": false, "amend_date": "2011-05-25"}, {"id": "平成18年法律第114号", "label": "建築士法等の一部を改正する法律", "law_type": "Act", "law_name": "建築士法等の一部を改正する法律", "law_num": "平成18年法律第114号", "is_root": false, "amend_date": "2006-12-20"}, {"id": "平成18年法律第78号", "label": "法の適用に関する通則法", "law_type": "Act", "law_name": "法の適用に関する通則法", "law_num": "平成十八年法律第七十八号", "is_root": false, "amend_date": "2006-06-21", "enforcement_date": "2007-01-01", "abbrev": "法適用通則法", "category": "憲法", "status": "現行", "article_count": 43}, {"id": "平成18年法律第73号", "label": "遺失物法", "law_type": "Act", "law_name": "遺失物法", "law_num": "平成十八年法律第七十三号", "is_root": false, "amend_date": "2006-06-15", "enforcement_date": "2025-06-01", "category": "民事", "status": "現行", "article_count": 44}, {"id": "平成18年法律第50号", "label": "一般社団法人及び一般財団法人に関する法律及び公益社団法人及び公益財団法人の認定等に関する法律の施行に伴う関係法律の整備等に関する法律", "law_type": "Act", "law_name": "一般社団法人及び一般財団法人に関する法律及び公益社団法人及び公益財団法人の認定等に関する法律の施行に伴う関係法律の整備等に関する法律", "law_num": "平成十八年法律第五十号", "is_root": false, "amend_date": "2006-06-02", "enforcement_date": "2026-04-01", "category": "民事", "status": "現行", "article_count": 159}, {"id": "平成17年法律第87号", "label": "会社法の施行に伴う関係法律の整備等に関する法律", "law_type": "Act", "law_name": "会社法の施行に伴う関係法律の整備等に関する法律", "law_num": "平成十七年法律第八十七号", "is_root": false, "amend_date": "2005-07-26", "enforcement_date": "2022-09-01", "category": "民事", "status": "現行", "article_count": 65}, {"id": "平成16年法律第147号", "label": "民法の一部を改正する法律", "law_type": "Act", "law_name": "民法の一部を改正する法律", "law_num": "平成16年法律第147号", "is_root": false, "amend_date": "2004-12-01"}, {"id": "平成16年法律第124号", "label": "不動産登記法の施行に伴う関係法律の整備等に関する法律", "law_type": "Act", "law_name": "不動産登記法の施行に伴う関係法律の整備等に関する法律", "law_num": "平成16年法律第124号", "is_root": false, "amend_date": "2004-06-18"}, {"id": "平成16年法律第76号", "label": "破産法の施行に伴う関係法律の整備等に関する法律", "law_type": "Act", "law_name": "破産法の施行に伴う関係法律の整備等に関する法律", "law_num": "平成16年法律第76号", "is_root": false, "amend_date": "2004-06-02"}, {"id": "平成15年法律第138号", "label": "仲裁法", "law_type": "Act", "law_name": "仲裁法", "law_num": "平成十五年法律第百三十八号", "is_root": false, "amend_date": "2003-08-01", "enforcement_date": "2028-06-13", "category": "民事", "status": "未施行", "article_count": 60}, {"id": "平成15年法律第134号", "label": "担保物権及び民事執行制度の改善のための民法等の一部を改正する法律", "law_type": "Act", "law_name": "担保物権及び民事執行制度の改善のための民法等の一部を改正する法律", "law_num": "平成15年法律第134号", "is_root": false, "amend_date": "2003-08-01"}, {"id": "平成15年法律第109号", "label": "人事訴訟法", "law_type": "Act", "law_name": "人事訴訟法", "law_num": "平成十五年法律第百九号", "is_root": false, "amend_date": "2003-07-16", "enforcement_date": "2028-06-13", "abbrev": "人訴法", "category": "民事", "status": "未施行", "article_count": 54}, {"id": "平成14年法律第1号", "label": "日本電信電話株式会社の株式の売払収入の活用による社会資本の整備の促進に関する特別措置法等の一部を改正する法律", "law_type": "Act", "law_name": "日本電信電話株式会社の株式の売払収入の活用による社会資本の整備の促進に関する特別措置法等の一部を改正する法律", "law_num": "平成14年法律第1号", "is_root": false, "amend_date": "2002-02-08"}, {"id": "平成13年法律第41号", "label": "弁護士法の一部を改正する法律", "law_type": "Act", "law_name": "弁護士法の一部を改正する法律", "law_num": "平成13年法律第41号", "is_root": false, "amend_date": "2001-06-08"}, {"id": "平成12年法律第91号", "label": "商法等の一部を改正する法律の施行に伴う関係法律の整備に関する法律", "law_type": "Act", "law_name": "商法等の一部を改正する法律の施行に伴う関係法律の整備に関する法律", "law_num": "平成12年法律第91号", "is_root": false, "amend_date": "2000-05-31"}, {"id": "平成11年法律第225号", "label": "民事再生法", "law_type": "Act", "law_name": "民事再生法", "law_num": "平成十一年法律第二百二十五号", "is_root": false, "amend_date": "1999-12-22", "enforcement_date": "2028-06-13", "category": "民事", "status": "未施行", "article_count": 297}, {"id": "平成11年法律第149号", "label": "民法の一部を改正する法律", "law_type": "Act", "law_name": "民法の一部を改正する法律", "law_num": "平成11年法律第149号", "is_root": false, "amend_date": "1999-12-08"}, {"id": "平成11年法律第87号", "label": "地方分権の推進を図るための関係法律の整備等に関する法律", "law_type": "Act", "law_name": "地方分権の推進を図るための関係法律の整備等に関する法律", "law_num": "平成11年法律第87号", "is_root": false, "amend_date": "1999-07-16"}, {"id": "平成8年法律第110号", "label": "民事訴訟法の施行に伴う関係法律の整備等に関する法律", "law_type": "Act", "law_name": "民事訴訟法の施行に伴う関係法律の整備等に関する法律", "law_num": "平成8年法律第110号", "is_root": false, "amend_date": "1996-06-26"}, {"id": "平成3年法律第79号", "label": "行政事務に関する国と地方の関係等の整理及び合理化に関する法律", "law_type": "Act", "law_name": "行政事務に関する国と地方の関係等の整理及び合理化に関する法律", "law_num": "平成3年法律第79号", "is_root": false, "amend_date": "1991-05-21"}, {"id": "平成1年法律第91号", "label": "民事保全法", "law_type": "Act", "law_name": "民事保全法", "law_num": "平成元年法律第九十一号", "is_root": false, "amend_date": "1989-12-22", "enforcement_date": "2028-06-13", "abbrev": "民保法", "category": "民事", "status": "未施行", "article_count": 72}, {"id": "平成1年法律第27号", "label": "法例の一部を改正する法律", "law_type": "Act", "law_name": "法例の一部を改正する法律", "law_num": "平成1年法律第27号", "is_root": false, "amend_date": "1989-06-28"}, {"id": "昭和62年法律第101号", "label": "民法等の一部を改正する法律", "law_type": "Act", "law_name": "民法等の一部を改正する法律", "law_num": "昭和62年法律第101号", "is_root": false, "amend_date": "1987-09-26"}, {"id": "昭和55年法律第51号", "label": "民法及び家事審判法の一部を改正する法律", "law_type": "Act", "law_name": "民法及び家事審判法の一部を改正する法律", "law_num": "昭和55年法律第51号", "is_root": false, "amend_date": "1980-05-17"}, {"id": "昭和54年法律第68号", "label": "民法及び民法施行法の一部を改正する法律", "law_type": "Act", "law_name": "民法及び民法施行法の一部を改正する法律", "law_num": "昭和54年法律第68号", "is_root": false, "amend_date": "1979-12-20"}, {"id": "昭和54年法律第5号", "label": "民事執行法の施行に伴う関係法律の整理等に関する法律", "law_type": "Act", "law_name": "民事執行法の施行に伴う関係法律の整理等に関する法律", "law_num": "昭和54年法律第5号", "is_root": false, "amend_date": "1979-03-30"}, {"id": "昭和51年法律第66号", "label": "民法等の一部を改正する法律", "law_type": "Act", "law_name": "民法等の一部を改正する法律", "law_num": "昭和51年法律第66号", "is_root": false, "amend_date": "1976-06-15"}, {"id": "昭和46年法律第99号", "label": "民法の一部を改正する法律", "law_type": "Act", "law_name": "民法の一部を改正する法律", "law_num": "昭和46年法律第99号", "is_root": false, "amend_date": "1971-06-03"}, {"id": "昭和41年法律第111号", "label": "執行官法", "law_type": "Act", "law_name": "執行官法", "law_num": "昭和四十一年法律第百十一号", "is_root": false, "amend_date": "1966-07-01", "enforcement_date": "2028-06-13", "category": "司法", "status": "未施行", "article_count": 23}, {"id": "昭和41年法律第93号", "label": "借地法等の一部を改正する法律", "law_type": "Act", "law_name": "借地法等の一部を改正する法律", "law_num": "昭和41年法律第93号", "is_root": false, "amend_date": "1966-06-30"}, {"id": "昭和39年法律第100号", "label": "遺言の方式の準拠法に関する法律", "law_type": "Act", "law_name": "遺言の方式の準拠法に関する法律", "law_num": "昭和三十九年法律第百号", "is_root": false, "amend_date": "1964-06-10", "enforcement_date": "2007-01-01", "category": "憲法", "status": "現行", "article_count": 8}, {"id": "昭和38年法律第126号", "label": "商業登記法の施行に伴う関係法令の整理等に関する法律", "law_type": "Act", "law_name": "商業登記法の施行に伴う関係法令の整理等に関する法律", "law_num": "昭和三十八年法律第百二十六号", "is_root": false, "amend_date": "1963-07-09", "enforcement_date": "1964-04-01", "category": "民事", "status": "現行", "article_count": 7}, {"id": "昭和37年法律第69号", "label": "建物の区分所有等に関する法律", "law_type": "Act", "law_name": "建物の区分所有等に関する法律", "law_num": "昭和三十七年法律第六十九号", "is_root": false, "amend_date": "1962-04-04", "enforcement_date": "2026-04-01", "abbrev": "マンション法,区分所有法", "category": "民事", "status": "現行", "article_count": 134}, {"id": "昭和37年法律第40号", "label": "民法の一部を改正する法律", "law_type": "Act", "law_name": "民法の一部を改正する法律", "law_num": "昭和37年法律第40号", "is_root": false, "amend_date": "1962-03-29"}, {"id": "昭和33年法律第62号", "label": "計量単位の統一に伴う関係法律の整備に関する法律", "law_type": "Act", "law_name": "計量単位の統一に伴う関係法律の整備に関する法律", "law_num": "昭和33年法律第62号", "is_root": false, "amend_date": "1958-04-15"}, {"id": "昭和33年法律第5号", "label": "遺失物法等の一部を改正する法律", "law_type": "Act", "law_name": "遺失物法等の一部を改正する法律", "law_num": "昭和33年法律第5号", "is_root": false, "amend_date": "1958-03-10"}, {"id": "昭和25年法律第123号", "label": "精神保健及び精神障害者福祉に関する法律", "law_type": "Act", "law_name": "精神保健及び精神障害者福祉に関する法律", "law_num": "昭和二十五年法律第百二十三号", "is_root": false, "amend_date": "1950-05-01", "enforcement_date": "2026-10-01", "abbrev": "精神保健福祉法", "category": "厚生", "status": "未施行", "article_count": 138}, {"id": "昭和24年法律第141号", "label": "公証人法及び民法の一部を改正する法律", "law_type": "Act", "law_name": "公証人法及び民法の一部を改正する法律", "law_num": "昭和24年法律第141号", "is_root": false, "amend_date": "1949-05-31"}, {"id": "昭和24年法律第115号", "label": "民法及び民事訴訟法の一部を改正する法律", "law_type": "Act", "law_name": "民法及び民事訴訟法の一部を改正する法律", "law_num": "昭和24年法律第115号", "is_root": false, "amend_date": "1949-05-28"}, {"id": "昭和23年法律第260号", "label": "裁判所法中の一部を改正する等の法律", "law_type": "Act", "law_name": "裁判所法中の一部を改正する等の法律", "law_num": "昭和23年法律第260号", "is_root": false, "amend_date": "1948-12-21"}, {"id": "昭和22年法律第222号", "label": "民法の一部を改正する法律", "law_type": "Act", "law_name": "民法の一部を改正する法律", "law_num": "昭和22年法律第222号", "is_root": false, "amend_date": "1947-12-22"}, {"id": "昭和22年法律第61号", "label": "検察庁法", "law_type": "Act", "law_name": "検察庁法", "law_num": "昭和二十二年法律第六十一号", "is_root": false, "amend_date": "1947-04-16", "enforcement_date": "2025-06-01", "category": "司法", "status": "現行", "article_count": 32}, {"id": "昭和13年法律第18号", "label": "民法中改正法律", "law_type": "Act", "law_name": "民法中改正法律", "law_num": "昭和13年法律第18号", "is_root": false, "amend_date": "1938-03-22"}, {"id": "大正15年法律第69号", "label": "民法中改正法律", "law_type": "Act", "law_name": "民法中改正法律", "law_num": "大正15年法律第69号", "is_root": false, "amend_date": "1926-04-24"}], "edges": [{"source": "令和7年法律第57号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2025-06-06"}, {"source": "令和6年法律第33号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2024-05-24"}, {"source": "令和6年法律第30号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2024-05-22"}, {"source": "令和6年法律第29号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2024-05-22"}, {"source": "令和5年法律第53号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2023-06-14"}, {"source": "令和4年法律第102号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2022-12-16"}, {"source": "令和4年法律第68号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2022-06-17"}, {"source": "令和3年法律第61号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2021-06-11"}, {"source": "令和3年法律第37号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2021-05-19"}, {"source": "令和3年法律第24号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2021-04-28"}, {"source": "令和1年法律第71号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2019-12-11"}, {"source": "令和1年法律第34号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2019-06-14"}, {"source": "令和1年法律第2号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2019-05-17"}, {"source": "平成30年法律第72号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2018-07-13"}, {"source": "平成30年法律第59号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2018-06-20"}, {"source": "平成29年法律第44号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2017-06-02"}, {"source": "平成28年法律第71号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2016-06-07"}, {"source": "平成28年法律第27号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2016-04-13"}, {"source": "平成26年法律第69号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2014-06-13"}, {"source": "平成25年法律第94号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2013-12-11"}, {"source": "平成23年法律第74号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2011-06-24"}, {"source": "平成23年法律第61号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2011-06-03"}, {"source": "平成23年法律第53号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2011-05-25"}, {"source": "平成18年法律第114号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2006-12-20"}, {"source": "平成18年法律第78号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2006-06-21"}, {"source": "平成18年法律第73号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2006-06-15"}, {"source": "平成18年法律第50号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2006-06-02"}, {"source": "平成17年法律第87号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2005-07-26"}, {"source": "平成16年法律第147号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2004-12-01"}, {"source": "平成16年法律第124号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2004-06-18"}, {"source": "平成16年法律第76号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2004-06-02"}, {"source": "平成15年法律第138号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2003-08-01"}, {"source": "平成15年法律第134号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2003-08-01"}, {"source": "平成15年法律第109号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2003-07-16"}, {"source": "平成14年法律第1号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2002-02-08"}, {"source": "平成13年法律第41号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2001-06-08"}, {"source": "平成12年法律第91号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "2000-05-31"}, {"source": "平成11年法律第225号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1999-12-22"}, {"source": "平成11年法律第149号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1999-12-08"}, {"source": "平成11年法律第87号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1999-07-16"}, {"source": "平成8年法律第110号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1996-06-26"}, {"source": "平成3年法律第79号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1991-05-21"}, {"source": "平成1年法律第91号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1989-12-22"}, {"source": "平成1年法律第27号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1989-06-28"}, {"source": "昭和62年法律第101号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1987-09-26"}, {"source": "昭和55年法律第51号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1980-05-17"}, {"source": "昭和54年法律第68号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1979-12-20"}, {"source": "昭和54年法律第5号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1979-03-30"}, {"source": "昭和51年法律第66号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1976-06-15"}, {"source": "昭和46年法律第99号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1971-06-03"}, {"source": "昭和41年法律第111号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1966-07-01"}, {"source": "昭和41年法律第93号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1966-06-30"}, {"source": "昭和39年法律第100号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1964-06-10"}, {"source": "昭和38年法律第126号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1963-07-09"}, {"source": "昭和37年法律第69号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1962-04-04"}, {"source": "昭和37年法律第40号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1962-03-29"}, {"source": "昭和33年法律第62号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1958-04-15"}, {"source": "昭和33年法律第5号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1958-03-10"}, {"source": "昭和25年法律第123号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1950-05-01"}, {"source": "昭和24年法律第141号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1949-05-31"}, {"source": "昭和24年法律第115号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1949-05-28"}, {"source": "昭和23年法律第260号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1948-12-21"}, {"source": "昭和22年法律第222号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1947-12-22"}, {"source": "昭和22年法律第61号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1947-04-16"}, {"source": "昭和13年法律第18号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1938-03-22"}, {"source": "大正15年法律第69号", "target": "明治29年法律第89号", "edge_type": "amends", "amend_date": "1926-04-24"}], "intra": {"nodes": [{"id": "1", "label": "第1条", "caption": "（基本原則）", "chapter": "第一章 通則", "chapter_num": "1", "chapter_color": "#4e79a7", "ordinal": 1}, {"id": "2", "label": "第2条", "caption": "（解釈の基準）", "chapter": "第一章 通則", "chapter_num": "1", "chapter_color": "#4e79a7", "ordinal": 2}, {"id": "3", "label": "第3条", "caption": "", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 3}, {"id": "4", "label": "第4条", "caption": "（成年）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 5}, {"id": "5", "label": "第5条", "caption": "（未成年者の法律行為）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 6}, {"id": "6", "label": "第6条", "caption": "（未成年者の営業の許可）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 7}, {"id": "7", "label": "第7条", "caption": "（後見開始の審判）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 8}, {"id": "8", "label": "第8条", "caption": "（成年被後見人及び成年後見人）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 9}, {"id": "9", "label": "第9条", "caption": "（成年被後見人の法律行為）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 10}, {"id": "10", "label": "第10条", "caption": "（後見開始の審判の取消し）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 11}, {"id": "11", "label": "第11条", "caption": "（保佐開始の審判）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 12}, {"id": "12", "label": "第12条", "caption": "（被保佐人及び保佐人）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 13}, {"id": "13", "label": "第13条", "caption": "（保佐人の同意を要する行為等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 14}, {"id": "14", "label": "第14条", "caption": "（保佐開始の審判等の取消し）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 15}, {"id": "15", "label": "第15条", "caption": "（補助開始の審判）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 16}, {"id": "17", "label": "第17条", "caption": "（補助人の同意を要する旨の審判等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 18}, {"id": "18", "label": "第18条", "caption": "（補助開始の審判等の取消し）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 19}, {"id": "19", "label": "第19条", "caption": "（審判相互の関係）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 20}, {"id": "20", "label": "第20条", "caption": "（制限行為能力者の相手方の催告権）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 21}, {"id": "21", "label": "第21条", "caption": "（制限行為能力者の詐術）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 22}, {"id": "22", "label": "第22条", "caption": "（住所）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 23}, {"id": "23", "label": "第23条", "caption": "（居所）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 24}, {"id": "24", "label": "第24条", "caption": "（仮住所）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 25}, {"id": "25", "label": "第25条", "caption": "（不在者の財産の管理）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 26}, {"id": "26", "label": "第26条", "caption": "（管理人の改任）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 27}, {"id": "27", "label": "第27条", "caption": "（管理人の職務）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 28}, {"id": "28", "label": "第28条", "caption": "（管理人の権限）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 29}, {"id": "29", "label": "第29条", "caption": "（管理人の担保提供及び報酬）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 30}, {"id": "30", "label": "第30条", "caption": "（失踪の宣告）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 31}, {"id": "31", "label": "第31条", "caption": "（失踪の宣告の効力）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 32}, {"id": "32", "label": "第32条", "caption": "（失踪の宣告の取消し）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 33}, {"id": "33", "label": "第33条", "caption": "（法人の成立等）", "chapter": "第三章 法人", "chapter_num": "3", "chapter_color": "#f28e2b", "ordinal": 35}, {"id": "34", "label": "第34条", "caption": "（法人の能力）", "chapter": "第三章 法人", "chapter_num": "3", "chapter_color": "#f28e2b", "ordinal": 36}, {"id": "35", "label": "第35条", "caption": "（外国法人）", "chapter": "第三章 法人", "chapter_num": "3", "chapter_color": "#f28e2b", "ordinal": 37}, {"id": "36", "label": "第36条", "caption": "（登記）", "chapter": "第三章 法人", "chapter_num": "3", "chapter_color": "#f28e2b", "ordinal": 38}, {"id": "121", "label": "第121条", "caption": "（取消しの効果）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 78}, {"id": "121_2", "label": "第121_2条", "caption": "（原状回復の義務）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 79}, {"id": "122", "label": "第122条", "caption": "（取り消すことができる行為の追認）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 80}, {"id": "124", "label": "第124条", "caption": "（追認の要件）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 82}, {"id": "125", "label": "第125条", "caption": "（法定追認）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 83}, {"id": "147", "label": "第147条", "caption": "（裁判上の請求等による時効の完成猶予及び更新）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 105}, {"id": "153", "label": "第153条", "caption": "（時効の完成猶予又は更新の効力が及ぶ者の範囲）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 111}, {"id": "164", "label": "第164条", "caption": "（占有の中止等による取得時効の中断）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 120}, {"id": "266", "label": "第266条", "caption": "（地代）", "chapter": "第四章 地上権", "chapter_num": "4", "chapter_color": "#e15759", "ordinal": 237}, {"id": "276", "label": "第276条", "caption": "（永小作権の消滅請求）", "chapter": "第五章 永小作権", "chapter_num": "5", "chapter_color": "#76b7b2", "ordinal": 248}, {"id": "296", "label": "第296条", "caption": "（留置権の不可分性）", "chapter": "第七章 留置権", "chapter_num": "7", "chapter_color": "#59a14f", "ordinal": 268}, {"id": "304", "label": "第304条", "caption": "（物上代位）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 276}, {"id": "308_2", "label": "第308_2条", "caption": "（子の監護費用の先取特権）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 281}, {"id": "319", "label": "第319条", "caption": "（即時取得の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 292}, {"id": "350", "label": "第350条", "caption": "（留置権及び先取特権の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 323}, {"id": "372", "label": "第372条", "caption": "（留置権等の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 344}, {"id": "383", "label": "第383条", "caption": "（抵当権消滅請求の手続）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 355}, {"id": "384", "label": "第384条", "caption": "（債権者のみなし承諾）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 356}, {"id": "398_4", "label": "第398_4条", "caption": "（根抵当権の被担保債権の範囲及び債務者の変更）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 373}, {"id": "398_16", "label": "第398_16条", "caption": "（共同根抵当）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 385}, {"id": "398_22", "label": "第398_22条", "caption": "（根抵当権の消滅請求）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 391}, {"id": "441", "label": "第441条", "caption": "（相対的効力の原則）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 456}, {"id": "442", "label": "第442条", "caption": "（連帯債務者間の求償権）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 457}, {"id": "458", "label": "第458条", "caption": "（連帯保証人について生じた事由の効力）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 473}, {"id": "462", "label": "第462条", "caption": "（委託を受けない保証人の求償権）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 480}, {"id": "465", "label": "第465条", "caption": "（共同保証人間の求償権）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 483}, {"id": "465_6", "label": "第465_6条", "caption": "（公正証書の作成と保証の効力）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 488}, {"id": "465_7", "label": "第465_7条", "caption": "（保証に係る公正証書の方式の特則）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 489}, {"id": "465_8", "label": "第465_8条", "caption": "（公正証書の作成と求償権についての保証の効力）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 490}, {"id": "466", "label": "第466条", "caption": "（債権の譲渡性）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 493}, {"id": "466_3", "label": "第466_3条", "caption": "", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 495}, {"id": "467", "label": "第467条", "caption": "（債権の譲渡の対抗要件）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 499}, {"id": "468", "label": "第468条", "caption": "（債権の譲渡における債務者の抗弁）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 500}, {"id": "469", "label": "第469条", "caption": "（債権の譲渡における相殺権）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 501}, {"id": "488", "label": "第488条", "caption": "（同種の給付を目的とする数個の債務がある場合の充当）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 523}, {"id": "489", "label": "第489条", "caption": "（元本、利息及び費用を支払うべき場合の充当）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 524}, {"id": "512", "label": "第512条", "caption": "（相殺の充当）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 547}, {"id": "520_11", "label": "第520_11条", "caption": "（指図証券の喪失）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 565}, {"id": "520_12", "label": "第520_12条", "caption": "（指図証券喪失の場合の権利行使方法）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 566}, {"id": "520_18", "label": "第520_18条", "caption": "（指図証券の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 572}, {"id": "520_19", "label": "第520_19条", "caption": "", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 573}, {"id": "533", "label": "第533条", "caption": "（同時履行の抗弁）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 589}, {"id": "541", "label": "第541条", "caption": "（催告による解除）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 597}, {"id": "542", "label": "第542条", "caption": "（催告によらない解除）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 598}, {"id": "548_2", "label": "第548_2条", "caption": "（定型約款の合意）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 605}, {"id": "564", "label": "第564条", "caption": "（買主の損害賠償請求及び解除権の行使）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 623}, {"id": "565", "label": "第565条", "caption": "（移転した権利が契約の内容に適合しない場合における売主の担保責任）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 624}, {"id": "583", "label": "第583条", "caption": "（買戻しの実行）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 642}, {"id": "590", "label": "第590条", "caption": "（貸主の引渡義務等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 650}, {"id": "597", "label": "第597条", "caption": "（期間満了等による使用貸借の終了）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 658}, {"id": "599", "label": "第599条", "caption": "（借主による収去等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 660}, {"id": "600", "label": "第600条", "caption": "（損害賠償及び費用の償還の請求権についての期間の制限）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 661}, {"id": "602", "label": "第602条", "caption": "（短期賃貸借）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 663}, {"id": "605_2", "label": "第605_2条", "caption": "（不動産の賃貸人たる地位の移転）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 667}, {"id": "620", "label": "第620条", "caption": "（賃貸借の解除の効力）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 686}, {"id": "621", "label": "第621条", "caption": "（賃借人の原状回復義務）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 687}, {"id": "622", "label": "第622条", "caption": "（使用貸借の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 688}, {"id": "644", "label": "第644条", "caption": "（受任者の注意義務）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 710}, {"id": "645", "label": "第645条", "caption": "（受任者による報告）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 712}, {"id": "646", "label": "第646条", "caption": "（受任者による受取物の引渡し等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 713}, {"id": "647", "label": "第647条", "caption": "（受任者の金銭の消費についての責任）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 714}, {"id": "648", "label": "第648条", "caption": "（受任者の報酬）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 715}, {"id": "648_2", "label": "第648_2条", "caption": "（成果等に対する報酬）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 716}, {"id": "650", "label": "第650条", "caption": "（受任者による費用等の償還請求等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 718}, {"id": "654", "label": "第654条", "caption": "（委任の終了後の処分）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 722}, {"id": "655", "label": "第655条", "caption": "（委任の終了の対抗要件）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 723}, {"id": "665", "label": "第665条", "caption": "（委任の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 735}, {"id": "666", "label": "第666条", "caption": "（消費寄託）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 737}, {"id": "671", "label": "第671条", "caption": "（委任の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 745}, {"id": "701", "label": "第701条", "caption": "（委任の規定の準用）", "chapter": "第三章 事務管理", "chapter_num": "3", "chapter_color": "#f28e2b", "ordinal": 777}, {"id": "722", "label": "第722条", "caption": "（損害賠償の方法、中間利息の控除及び過失相殺）", "chapter": "第五章 不法行為", "chapter_num": "5", "chapter_color": "#76b7b2", "ordinal": 798}, {"id": "724", "label": "第724条", "caption": "（不法行為による損害賠償請求権の消滅時効）", "chapter": "第五章 不法行為", "chapter_num": "5", "chapter_color": "#76b7b2", "ordinal": 800}, {"id": "728", "label": "第728条", "caption": "（離婚等による姻族関係の終了）", "chapter": "第一章 総則", "chapter_num": "1", "chapter_color": "#4e79a7", "ordinal": 805}, {"id": "731", "label": "第731条", "caption": "（婚姻適齢）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 808}, {"id": "738", "label": "第738条", "caption": "（成年被後見人の婚姻）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 815}, {"id": "739", "label": "第739条", "caption": "（婚姻の届出）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 816}, {"id": "740", "label": "第740条", "caption": "（婚姻の届出の受理）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 817}, {"id": "744", "label": "第744条", "caption": "（不適法な婚姻の取消し）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 821}, {"id": "747", "label": "第747条", "caption": "（詐欺又は強迫による婚姻の取消し）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 824}, {"id": "749", "label": "第749条", "caption": "（離婚の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 826}, {"id": "764", "label": "第764条", "caption": "（婚姻の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 840}, {"id": "766", "label": "第766条", "caption": "（離婚後の子の監護に関する事項の定め等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 842}, {"id": "766_2", "label": "第766_2条", "caption": "（審判による父母以外の親族と子との交流の定め）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 843}, {"id": "766_3", "label": "第766_3条", "caption": "（子の監護に要する費用の分担の定めがない場合の特例）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 844}, {"id": "768", "label": "第768条", "caption": "（財産分与）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 846}, {"id": "769", "label": "第769条", "caption": "（離婚による復氏の際の権利の承継）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 847}, {"id": "771", "label": "第771条", "caption": "（協議上の離婚の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 849}, {"id": "772", "label": "第772条", "caption": "（嫡出の推定）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 850}, {"id": "774", "label": "第774条", "caption": "（嫡出の否認）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 852}, {"id": "777", "label": "第777条", "caption": "（嫡出否認の訴えの出訴期間）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 855}, {"id": "778", "label": "第778条", "caption": "", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 856}, {"id": "788", "label": "第788条", "caption": "（認知後の子の監護に関する事項の定め等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 869}, {"id": "799", "label": "第799条", "caption": "（婚姻の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 880}, {"id": "808", "label": "第808条", "caption": "（婚姻の取消し等の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 891}, {"id": "812", "label": "第812条", "caption": "（婚姻の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 896}, {"id": "817_2", "label": "第817_2条", "caption": "（特別養子縁組の成立）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 902}, {"id": "819", "label": "第819条", "caption": "（離婚又は認知の場合の親権者）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 915}, {"id": "824", "label": "第824条", "caption": "（財産の管理及び代表）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 920}, {"id": "824_3", "label": "第824_3条", "caption": "（監護者の権利義務）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 922}, {"id": "830", "label": "第830条", "caption": "（第三者が無償で子に与えた財産の管理）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 928}, {"id": "831", "label": "第831条", "caption": "（委任の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 929}, {"id": "832", "label": "第832条", "caption": "（財産の管理について生じた親子間の債権の消滅時効）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 930}, {"id": "843", "label": "第843条", "caption": "（成年後見人の選任）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 942}, {"id": "844", "label": "第844条", "caption": "（後見人の辞任）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 943}, {"id": "846", "label": "第846条", "caption": "（後見人の解任）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 945}, {"id": "847", "label": "第847条", "caption": "（後見人の欠格事由）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 946}, {"id": "852", "label": "第852条", "caption": "（委任及び後見人の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 951}, {"id": "856", "label": "第856条", "caption": "（被後見人が包括財産を取得した場合についての準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 955}, {"id": "857", "label": "第857条", "caption": "（未成年被後見人の身上の監護に関する権利義務）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 956}, {"id": "859_2", "label": "第859_2条", "caption": "（成年後見人が数人ある場合の権限の行使等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 960}, {"id": "859_3", "label": "第859_3条", "caption": "（成年被後見人の居住用不動産の処分についての許可）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 961}, {"id": "861", "label": "第861条", "caption": "（支出金額の予定及び後見の事務の費用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 965}, {"id": "862", "label": "第862条", "caption": "（後見人の報酬）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 966}, {"id": "865", "label": "第865条", "caption": "", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 969}, {"id": "866", "label": "第866条", "caption": "（被後見人の財産等の譲受けの取消し）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 970}, {"id": "867", "label": "第867条", "caption": "（未成年被後見人に代わる親権の行使）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 971}, {"id": "872", "label": "第872条", "caption": "（未成年被後見人と未成年後見人等との間の契約等の取消し）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 976}, {"id": "876_2", "label": "第876_2条", "caption": "（保佐人及び臨時保佐人の選任等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 982}, {"id": "876_3", "label": "第876_3条", "caption": "（保佐監督人）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 983}, {"id": "876_5", "label": "第876_5条", "caption": "（保佐の事務及び保佐人の任務の終了等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 985}, {"id": "876_7", "label": "第876_7条", "caption": "（補助人及び臨時補助人の選任等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 987}, {"id": "876_8", "label": "第876_8条", "caption": "（補助監督人）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 988}, {"id": "876_9", "label": "第876_9条", "caption": "（補助人に代理権を付与する旨の審判）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 989}, {"id": "876_10", "label": "第876_10条", "caption": "（補助の事務及び補助人の任務の終了等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 990}, {"id": "887", "label": "第887条", "caption": "（子及びその代襲者等の相続権）", "chapter": "第二章 相続人", "chapter_num": "2", "chapter_color": "#edc948", "ordinal": 1001}, {"id": "889", "label": "第889条", "caption": "（直系尊属及び兄弟姉妹の相続権）", "chapter": "第二章 相続人", "chapter_num": "2", "chapter_color": "#edc948", "ordinal": 1003}, {"id": "891", "label": "第891条", "caption": "（相続人の欠格事由）", "chapter": "第二章 相続人", "chapter_num": "2", "chapter_color": "#edc948", "ordinal": 1005}, {"id": "895", "label": "第895条", "caption": "（推定相続人の廃除に関する審判確定前の遺産の管理）", "chapter": "第二章 相続人", "chapter_num": "2", "chapter_color": "#edc948", "ordinal": 1009}, {"id": "897_2", "label": "第897_2条", "caption": "（相続財産の保存）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1012}, {"id": "900", "label": "第900条", "caption": "（法定相続分）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1016}, {"id": "901", "label": "第901条", "caption": "（代襲相続人の相続分）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1017}, {"id": "902", "label": "第902条", "caption": "（遺言による相続分の指定）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1018}, {"id": "903", "label": "第903条", "caption": "（特別受益者の相続分）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1020}, {"id": "904", "label": "第904条", "caption": "", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1021}, {"id": "904_2", "label": "第904_2条", "caption": "（寄与分）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1022}, {"id": "904_3", "label": "第904_3条", "caption": "（期間経過後の遺産の分割における相続分）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1023}, {"id": "915", "label": "第915条", "caption": "（相続の承認又は放棄をすべき期間）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1036}, {"id": "926", "label": "第926条", "caption": "（限定承認者による管理）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1047}, {"id": "927", "label": "第927条", "caption": "（相続債権者及び受遺者に対する公告及び催告）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1048}, {"id": "929", "label": "第929条", "caption": "（公告期間満了後の弁済）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1050}, {"id": "930", "label": "第930条", "caption": "（期限前の債務等の弁済）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1051}, {"id": "931", "label": "第931条", "caption": "（受遺者に対する弁済）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1052}, {"id": "932", "label": "第932条", "caption": "（弁済のための相続財産の換価）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1053}, {"id": "933", "label": "第933条", "caption": "（相続債権者及び受遺者の換価手続への参加）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1054}, {"id": "934", "label": "第934条", "caption": "（不当な弁済をした限定承認者の責任等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1055}, {"id": "936", "label": "第936条", "caption": "（相続人が数人ある場合の相続財産の清算人）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1057}, {"id": "940", "label": "第940条", "caption": "（相続の放棄をした者による管理）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1061}, {"id": "943", "label": "第943条", "caption": "（財産分離の請求後の相続財産の管理）", "chapter": "第五章 財産分離", "chapter_num": "5", "chapter_color": "#76b7b2", "ordinal": 1064}, {"id": "944", "label": "第944条", "caption": "（財産分離の請求後の相続人による管理）", "chapter": "第五章 財産分離", "chapter_num": "5", "chapter_color": "#76b7b2", "ordinal": 1065}, {"id": "947", "label": "第947条", "caption": "（相続債権者及び受遺者に対する弁済）", "chapter": "第五章 財産分離", "chapter_num": "5", "chapter_color": "#76b7b2", "ordinal": 1068}, {"id": "950", "label": "第950条", "caption": "（相続人の債権者の請求による財産分離）", "chapter": "第五章 財産分離", "chapter_num": "5", "chapter_color": "#76b7b2", "ordinal": 1071}, {"id": "952", "label": "第952条", "caption": "（相続財産の清算人の選任）", "chapter": "第六章 相続人の不存在", "chapter_num": "6", "chapter_color": "#b07aa1", "ordinal": 1073}, {"id": "953", "label": "第953条", "caption": "（不在者の財産の管理人に関する規定の準用）", "chapter": "第六章 相続人の不存在", "chapter_num": "6", "chapter_color": "#b07aa1", "ordinal": 1074}, {"id": "957", "label": "第957条", "caption": "（相続債権者及び受遺者に対する弁済）", "chapter": "第六章 相続人の不存在", "chapter_num": "6", "chapter_color": "#b07aa1", "ordinal": 1078}, {"id": "968", "label": "第968条", "caption": "（自筆証書遺言）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1090}, {"id": "970", "label": "第970条", "caption": "（秘密証書遺言）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1093}, {"id": "976", "label": "第976条", "caption": "（死亡の危急に迫った者の遺言）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1099}, {"id": "982", "label": "第982条", "caption": "（普通の方式による遺言の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1105}, {"id": "1012", "label": "第1012条", "caption": "（遺言執行者の権利義務）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1135}, {"id": "1018", "label": "第1018条", "caption": "（遺言執行者の報酬）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1141}, {"id": "1036", "label": "第1036条", "caption": "（使用貸借及び賃貸借の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1159}, {"id": "1040", "label": "第1040条", "caption": "（居住建物の返還等）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1163}, {"id": "1041", "label": "第1041条", "caption": "（使用貸借等の規定の準用）", "chapter": "", "chapter_num": "", "chapter_color": "#999", "ordinal": 1164}, {"id": "1046", "label": "第1046条", "caption": "（遺留分侵害額の請求）", "chapter": "第九章 遺留分", "chapter_num": "9", "chapter_color": "#ff9da7", "ordinal": 1169}, {"id": "1047", "label": "第1047条", "caption": "（受遺者又は受贈者の負担額）", "chapter": "第九章 遺留分", "chapter_num": "9", "chapter_color": "#ff9da7", "ordinal": 1170}], "edges": [{"source": "872", "target": "121", "edge_type": "junyo"}, {"source": "872", "target": "121_2", "edge_type": "junyo"}, {"source": "872", "target": "122", "edge_type": "junyo"}, {"source": "872", "target": "124", "edge_type": "junyo"}, {"source": "872", "target": "125", "edge_type": "junyo"}, {"source": "872", "target": "20", "edge_type": "junyo"}, {"source": "830", "target": "27", "edge_type": "junyo"}, {"source": "895", "target": "27", "edge_type": "junyo"}, {"source": "897_2", "target": "27", "edge_type": "junyo"}, {"source": "943", "target": "27", "edge_type": "junyo"}, {"source": "266", "target": "276", "edge_type": "junyo"}, {"source": "830", "target": "28", "edge_type": "junyo"}, {"source": "895", "target": "28", "edge_type": "junyo"}, {"source": "897_2", "target": "28", "edge_type": "junyo"}, {"source": "943", "target": "28", "edge_type": "junyo"}, {"source": "830", "target": "29", "edge_type": "junyo"}, {"source": "895", "target": "29", "edge_type": "junyo"}, {"source": "897_2", "target": "29", "edge_type": "junyo"}, {"source": "943", "target": "29", "edge_type": "junyo"}, {"source": "350", "target": "296", "edge_type": "junyo"}, {"source": "372", "target": "296", "edge_type": "junyo"}, {"source": "350", "target": "304", "edge_type": "junyo"}, {"source": "372", "target": "304", "edge_type": "junyo"}, {"source": "950", "target": "304", "edge_type": "junyo"}, {"source": "458", "target": "441", "edge_type": "junyo"}, {"source": "465", "target": "442", "edge_type": "junyo"}, {"source": "465", "target": "462", "edge_type": "junyo"}, {"source": "465_8", "target": "465_6", "edge_type": "junyo"}, {"source": "512", "target": "489", "edge_type": "junyo"}, {"source": "520_18", "target": "520_11", "edge_type": "junyo"}, {"source": "520_19", "target": "520_11", "edge_type": "junyo"}, {"source": "520_18", "target": "520_12", "edge_type": "junyo"}, {"source": "520_19", "target": "520_12", "edge_type": "junyo"}, {"source": "666", "target": "590", "edge_type": "junyo"}, {"source": "622", "target": "597", "edge_type": "junyo"}, {"source": "1036", "target": "597", "edge_type": "junyo"}, {"source": "1041", "target": "597", "edge_type": "junyo"}, {"source": "622", "target": "599", "edge_type": "junyo"}, {"source": "1040", "target": "599", "edge_type": "junyo"}, {"source": "622", "target": "600", "edge_type": "junyo"}, {"source": "1036", "target": "600", "edge_type": "junyo"}, {"source": "1041", "target": "600", "edge_type": "junyo"}, {"source": "1040", "target": "621", "edge_type": "junyo"}, {"source": "671", "target": "644", "edge_type": "junyo"}, {"source": "852", "target": "644", "edge_type": "junyo"}, {"source": "876_3", "target": "644", "edge_type": "junyo"}, {"source": "876_5", "target": "644", "edge_type": "junyo"}, {"source": "876_8", "target": "644", "edge_type": "junyo"}, {"source": "876_10", "target": "644", "edge_type": "junyo"}, {"source": "1012", "target": "644", "edge_type": "junyo"}, {"source": "671", "target": "645", "edge_type": "junyo"}, {"source": "701", "target": "645", "edge_type": "junyo"}, {"source": "926", "target": "645", "edge_type": "junyo"}, {"source": "940", "target": "645", "edge_type": "junyo"}, {"source": "944", "target": "645", "edge_type": "junyo"}, {"source": "1012", "target": "645", "edge_type": "junyo"}, {"source": "665", "target": "646", "edge_type": "junyo"}, {"source": "671", "target": "646", "edge_type": "junyo"}, {"source": "701", "target": "646", "edge_type": "junyo"}, {"source": "926", "target": "646", "edge_type": "junyo"}, {"source": "940", "target": "646", "edge_type": "junyo"}, {"source": "944", "target": "646", "edge_type": "junyo"}, {"source": "1012", "target": "646", "edge_type": "junyo"}, {"source": "665", "target": "647", "edge_type": "junyo"}, {"source": "671", "target": "647", "edge_type": "junyo"}, {"source": "701", "target": "647", "edge_type": "junyo"}, {"source": "944", "target": "647", "edge_type": "junyo"}, {"source": "1012", "target": "647", "edge_type": "junyo"}, {"source": "665", "target": "648", "edge_type": "junyo"}, {"source": "671", "target": "648", "edge_type": "junyo"}, {"source": "1018", "target": "648", "edge_type": "junyo"}, {"source": "671", "target": "648_2", "edge_type": "junyo"}, {"source": "1018", "target": "648_2", "edge_type": "junyo"}, {"source": "665", "target": "650", "edge_type": "junyo"}, {"source": "671", "target": "650", "edge_type": "junyo"}, {"source": "926", "target": "650", "edge_type": "junyo"}, {"source": "940", "target": "650", "edge_type": "junyo"}, {"source": "944", "target": "650", "edge_type": "junyo"}, {"source": "1012", "target": "650", "edge_type": "junyo"}, {"source": "831", "target": "654", "edge_type": "junyo"}, {"source": "852", "target": "654", "edge_type": "junyo"}, {"source": "876_3", "target": "654", "edge_type": "junyo"}, {"source": "876_5", "target": "654", "edge_type": "junyo"}, {"source": "876_8", "target": "654", "edge_type": "junyo"}, {"source": "876_10", "target": "654", "edge_type": "junyo"}, {"source": "831", "target": "655", "edge_type": "junyo"}, {"source": "852", "target": "655", "edge_type": "junyo"}, {"source": "876_3", "target": "655", "edge_type": "junyo"}, {"source": "876_5", "target": "655", "edge_type": "junyo"}, {"source": "876_8", "target": "655", "edge_type": "junyo"}, {"source": "876_10", "target": "655", "edge_type": "junyo"}, {"source": "934", "target": "724", "edge_type": "junyo"}, {"source": "749", "target": "728", "edge_type": "junyo"}, {"source": "764", "target": "738", "edge_type": "junyo"}, {"source": "799", "target": "738", "edge_type": "junyo"}, {"source": "812", "target": "738", "edge_type": "junyo"}, {"source": "764", "target": "739", "edge_type": "junyo"}, {"source": "799", "target": "739", "edge_type": "junyo"}, {"source": "812", "target": "739", "edge_type": "junyo"}, {"source": "764", "target": "747", "edge_type": "junyo"}, {"source": "808", "target": "747", "edge_type": "junyo"}, {"source": "812", "target": "747", "edge_type": "junyo"}, {"source": "749", "target": "766", "edge_type": "junyo"}, {"source": "771", "target": "766", "edge_type": "junyo"}, {"source": "788", "target": "766", "edge_type": "junyo"}, {"source": "749", "target": "766_2", "edge_type": "junyo"}, {"source": "771", "target": "766_2", "edge_type": "junyo"}, {"source": "788", "target": "766_2", "edge_type": "junyo"}, {"source": "749", "target": "766_3", "edge_type": "junyo"}, {"source": "771", "target": "766_3", "edge_type": "junyo"}, {"source": "788", "target": "766_3", "edge_type": "junyo"}, {"source": "749", "target": "768", "edge_type": "junyo"}, {"source": "771", "target": "768", "edge_type": "junyo"}, {"source": "749", "target": "769", "edge_type": "junyo"}, {"source": "771", "target": "769", "edge_type": "junyo"}, {"source": "808", "target": "769", "edge_type": "junyo"}, {"source": "749", "target": "819", "edge_type": "junyo"}, {"source": "876_5", "target": "824", "edge_type": "junyo"}, {"source": "876_10", "target": "824", "edge_type": "junyo"}, {"source": "876_5", "target": "832", "edge_type": "junyo"}, {"source": "876_10", "target": "832", "edge_type": "junyo"}, {"source": "852", "target": "843", "edge_type": "junyo"}, {"source": "876_2", "target": "843", "edge_type": "junyo"}, {"source": "876_3", "target": "843", "edge_type": "junyo"}, {"source": "876_7", "target": "843", "edge_type": "junyo"}, {"source": "876_8", "target": "843", "edge_type": "junyo"}, {"source": "852", "target": "844", "edge_type": "junyo"}, {"source": "876_2", "target": "844", "edge_type": "junyo"}, {"source": "876_3", "target": "844", "edge_type": "junyo"}, {"source": "876_7", "target": "844", "edge_type": "junyo"}, {"source": "876_8", "target": "844", "edge_type": "junyo"}, {"source": "852", "target": "846", "edge_type": "junyo"}, {"source": "876_2", "target": "846", "edge_type": "junyo"}, {"source": "876_3", "target": "846", "edge_type": "junyo"}, {"source": "876_7", "target": "846", "edge_type": "junyo"}, {"source": "876_8", "target": "846", "edge_type": "junyo"}, {"source": "852", "target": "847", "edge_type": "junyo"}, {"source": "876_2", "target": "847", "edge_type": "junyo"}, {"source": "876_3", "target": "847", "edge_type": "junyo"}, {"source": "876_7", "target": "847", "edge_type": "junyo"}, {"source": "876_8", "target": "847", "edge_type": "junyo"}, {"source": "867", "target": "856", "edge_type": "junyo"}, {"source": "867", "target": "857", "edge_type": "junyo"}, {"source": "852", "target": "859_2", "edge_type": "junyo"}, {"source": "876_3", "target": "859_2", "edge_type": "junyo"}, {"source": "876_5", "target": "859_2", "edge_type": "junyo"}, {"source": "876_8", "target": "859_2", "edge_type": "junyo"}, {"source": "876_10", "target": "859_2", "edge_type": "junyo"}, {"source": "852", "target": "859_3", "edge_type": "junyo"}, {"source": "876_3", "target": "859_3", "edge_type": "junyo"}, {"source": "876_5", "target": "859_3", "edge_type": "junyo"}, {"source": "876_8", "target": "859_3", "edge_type": "junyo"}, {"source": "876_10", "target": "859_3", "edge_type": "junyo"}, {"source": "852", "target": "861", "edge_type": "junyo"}, {"source": "867", "target": "861", "edge_type": "junyo"}, {"source": "876_3", "target": "861", "edge_type": "junyo"}, {"source": "876_5", "target": "861", "edge_type": "junyo"}, {"source": "876_8", "target": "861", "edge_type": "junyo"}, {"source": "876_10", "target": "861", "edge_type": "junyo"}, {"source": "852", "target": "862", "edge_type": "junyo"}, {"source": "876_3", "target": "862", "edge_type": "junyo"}, {"source": "876_5", "target": "862", "edge_type": "junyo"}, {"source": "876_8", "target": "862", "edge_type": "junyo"}, {"source": "876_10", "target": "862", "edge_type": "junyo"}, {"source": "876_10", "target": "876_5", "edge_type": "junyo"}, {"source": "889", "target": "887", "edge_type": "junyo"}, {"source": "901", "target": "889", "edge_type": "junyo"}, {"source": "887", "target": "891", "edge_type": "junyo"}, {"source": "1047", "target": "904", "edge_type": "junyo"}, {"source": "936", "target": "926", "edge_type": "junyo"}, {"source": "950", "target": "927", "edge_type": "junyo"}, {"source": "950", "target": "929", "edge_type": "junyo"}, {"source": "947", "target": "930", "edge_type": "junyo"}, {"source": "950", "target": "930", "edge_type": "junyo"}, {"source": "947", "target": "931", "edge_type": "junyo"}, {"source": "950", "target": "931", "edge_type": "junyo"}, {"source": "947", "target": "932", "edge_type": "junyo"}, {"source": "950", "target": "932", "edge_type": "junyo"}, {"source": "947", "target": "933", "edge_type": "junyo"}, {"source": "950", "target": "933", "edge_type": "junyo"}, {"source": "947", "target": "934", "edge_type": "junyo"}, {"source": "950", "target": "934", "edge_type": "junyo"}, {"source": "950", "target": "943", "edge_type": "junyo"}, {"source": "950", "target": "944", "edge_type": "junyo"}, {"source": "970", "target": "968", "edge_type": "junyo"}, {"source": "982", "target": "968", "edge_type": "junyo"}, {"source": "982", "target": "976", "edge_type": "junyo"}, {"source": "1", "target": "1", "edge_type": "ref"}, {"source": "2", "target": "1", "edge_type": "ref"}, {"source": "3", "target": "1", "edge_type": "ref"}, {"source": "4", "target": "1", "edge_type": "ref"}, {"source": "7", "target": "1", "edge_type": "ref"}, {"source": "548_2", "target": "1", "edge_type": "ref"}, {"source": "1", "target": "10", "edge_type": "ref"}, {"source": "8", "target": "1012", "edge_type": "ref"}, {"source": "36", "target": "1018", "edge_type": "ref"}, {"source": "10", "target": "1036", "edge_type": "ref"}, {"source": "10", "target": "1040", "edge_type": "ref"}, {"source": "10", "target": "1041", "edge_type": "ref"}, {"source": "1047", "target": "1046", "edge_type": "ref"}, {"source": "1046", "target": "1047", "edge_type": "ref"}, {"source": "1", "target": "11", "edge_type": "ref"}, {"source": "2", "target": "11", "edge_type": "ref"}, {"source": "13", "target": "11", "edge_type": "ref"}, {"source": "14", "target": "11", "edge_type": "ref"}, {"source": "15", "target": "11", "edge_type": "ref"}, {"source": "1", "target": "12", "edge_type": "ref"}, {"source": "2", "target": "12", "edge_type": "ref"}, {"source": "121_2", "target": "121", "edge_type": "ref"}, {"source": "865", "target": "121", "edge_type": "ref"}, {"source": "866", "target": "121", "edge_type": "ref"}, {"source": "872", "target": "121", "edge_type": "ref"}, {"source": "8", "target": "121_2", "edge_type": "ref"}, {"source": "865", "target": "121_2", "edge_type": "ref"}, {"source": "866", "target": "121_2", "edge_type": "ref"}, {"source": "872", "target": "121_2", "edge_type": "ref"}, {"source": "8", "target": "122", "edge_type": "ref"}, {"source": "865", "target": "122", "edge_type": "ref"}, {"source": "866", "target": "122", "edge_type": "ref"}, {"source": "872", "target": "122", "edge_type": "ref"}, {"source": "8", "target": "124", "edge_type": "ref"}, {"source": "865", "target": "124", "edge_type": "ref"}, {"source": "866", "target": "124", "edge_type": "ref"}, {"source": "872", "target": "124", "edge_type": "ref"}, {"source": "8", "target": "125", "edge_type": "ref"}, {"source": "865", "target": "125", "edge_type": "ref"}, {"source": "866", "target": "125", "edge_type": "ref"}, {"source": "872", "target": "125", "edge_type": "ref"}, {"source": "1", "target": "13", "edge_type": "ref"}, {"source": "2", "target": "13", "edge_type": "ref"}, {"source": "3", "target": "13", "edge_type": "ref"}, {"source": "14", "target": "13", "edge_type": "ref"}, {"source": "17", "target": "13", "edge_type": "ref"}, {"source": "1", "target": "14", "edge_type": "ref"}, {"source": "5", "target": "14", "edge_type": "ref"}, {"source": "10", "target": "147", "edge_type": "ref"}, {"source": "153", "target": "147", "edge_type": "ref"}, {"source": "1", "target": "15", "edge_type": "ref"}, {"source": "17", "target": "15", "edge_type": "ref"}, {"source": "18", "target": "15", "edge_type": "ref"}, {"source": "876_9", "target": "15", "edge_type": "ref"}, {"source": "1", "target": "164", "edge_type": "ref"}, {"source": "1", "target": "17", "edge_type": "ref"}, {"source": "13", "target": "17", "edge_type": "ref"}, {"source": "15", "target": "17", "edge_type": "ref"}, {"source": "18", "target": "17", "edge_type": "ref"}, {"source": "20", "target": "17", "edge_type": "ref"}, {"source": "22", "target": "17", "edge_type": "ref"}, {"source": "1", "target": "18", "edge_type": "ref"}, {"source": "1", "target": "19", "edge_type": "ref"}, {"source": "1", "target": "2", "edge_type": "ref"}, {"source": "10", "target": "2", "edge_type": "ref"}, {"source": "1", "target": "20", "edge_type": "ref"}, {"source": "865", "target": "20", "edge_type": "ref"}, {"source": "866", "target": "20", "edge_type": "ref"}, {"source": "872", "target": "20", "edge_type": "ref"}, {"source": "1", "target": "21", "edge_type": "ref"}, {"source": "1", "target": "23", "edge_type": "ref"}, {"source": "1", "target": "24", "edge_type": "ref"}, {"source": "1", "target": "25", "edge_type": "ref"}, {"source": "27", "target": "25", "edge_type": "ref"}, {"source": "30", "target": "25", "edge_type": "ref"}, {"source": "32", "target": "25", "edge_type": "ref"}, {"source": "1", "target": "26", "edge_type": "ref"}, {"source": "19", "target": "26", "edge_type": "ref"}, {"source": "27", "target": "26", "edge_type": "ref"}, {"source": "1", "target": "27", "edge_type": "ref"}, {"source": "26", "target": "27", "edge_type": "ref"}, {"source": "830", "target": "27", "edge_type": "ref"}, {"source": "895", "target": "27", "edge_type": "ref"}, {"source": "897_2", "target": "27", "edge_type": "ref"}, {"source": "943", "target": "27", "edge_type": "ref"}, {"source": "953", "target": "27", "edge_type": "ref"}, {"source": "7", "target": "276", "edge_type": "ref"}, {"source": "266", "target": "276", "edge_type": "ref"}, {"source": "19", "target": "28", "edge_type": "ref"}, {"source": "25", "target": "28", "edge_type": "ref"}, {"source": "830", "target": "28", "edge_type": "ref"}, {"source": "895", "target": "28", "edge_type": "ref"}, {"source": "897_2", "target": "28", "edge_type": "ref"}, {"source": "943", "target": "28", "edge_type": "ref"}, {"source": "953", "target": "28", "edge_type": "ref"}, {"source": "1", "target": "29", "edge_type": "ref"}, {"source": "830", "target": "29", "edge_type": "ref"}, {"source": "895", "target": "29", "edge_type": "ref"}, {"source": "897_2", "target": "29", "edge_type": "ref"}, {"source": "943", "target": "29", "edge_type": "ref"}, {"source": "953", "target": "29", "edge_type": "ref"}, {"source": "350", "target": "296", "edge_type": "ref"}, {"source": "372", "target": "296", "edge_type": "ref"}, {"source": "12", "target": "3", "edge_type": "ref"}, {"source": "4", "target": "3", "edge_type": "ref"}, {"source": "1", "target": "30", "edge_type": "ref"}, {"source": "31", "target": "30", "edge_type": "ref"}, {"source": "350", "target": "304", "edge_type": "ref"}, {"source": "372", "target": "304", "edge_type": "ref"}, {"source": "950", "target": "304", "edge_type": "ref"}, {"source": "3", "target": "308_2", "edge_type": "ref"}, {"source": "1", "target": "31", "edge_type": "ref"}, {"source": "32", "target": "31", "edge_type": "ref"}, {"source": "1", "target": "33", "edge_type": "ref"}, {"source": "1", "target": "34", "edge_type": "ref"}, {"source": "1", "target": "35", "edge_type": "ref"}, {"source": "4", "target": "383", "edge_type": "ref"}, {"source": "384", "target": "383", "edge_type": "ref"}, {"source": "4", "target": "384", "edge_type": "ref"}, {"source": "9", "target": "398_16", "edge_type": "ref"}, {"source": "398_22", "target": "398_16", "edge_type": "ref"}, {"source": "11", "target": "398_22", "edge_type": "ref"}, {"source": "3", "target": "398_4", "edge_type": "ref"}, {"source": "1", "target": "4", "edge_type": "ref"}, {"source": "2", "target": "4", "edge_type": "ref"}, {"source": "7", "target": "4", "edge_type": "ref"}, {"source": "12", "target": "4", "edge_type": "ref"}, {"source": "4", "target": "4", "edge_type": "ref"}, {"source": "458", "target": "441", "edge_type": "ref"}, {"source": "465", "target": "442", "edge_type": "ref"}, {"source": "465", "target": "462", "edge_type": "ref"}, {"source": "21", "target": "465_6", "edge_type": "ref"}, {"source": "465_7", "target": "465_6", "edge_type": "ref"}, {"source": "465_8", "target": "465_6", "edge_type": "ref"}, {"source": "21", "target": "465_7", "edge_type": "ref"}, {"source": "465_8", "target": "465_7", "edge_type": "ref"}, {"source": "21", "target": "465_8", "edge_type": "ref"}, {"source": "22", "target": "466", "edge_type": "ref"}, {"source": "468", "target": "466", "edge_type": "ref"}, {"source": "469", "target": "466", "edge_type": "ref"}, {"source": "22", "target": "466_3", "edge_type": "ref"}, {"source": "468", "target": "466_3", "edge_type": "ref"}, {"source": "469", "target": "466_3", "edge_type": "ref"}, {"source": "22", "target": "467", "edge_type": "ref"}, {"source": "22", "target": "468", "edge_type": "ref"}, {"source": "22", "target": "469", "edge_type": "ref"}, {"source": "25", "target": "488", "edge_type": "ref"}, {"source": "489", "target": "488", "edge_type": "ref"}, {"source": "512", "target": "488", "edge_type": "ref"}, {"source": "25", "target": "489", "edge_type": "ref"}, {"source": "488", "target": "489", "edge_type": "ref"}, {"source": "512", "target": "489", "edge_type": "ref"}, {"source": "1", "target": "5", "edge_type": "ref"}, {"source": "12", "target": "5", "edge_type": "ref"}, {"source": "4", "target": "5", "edge_type": "ref"}, {"source": "26", "target": "512", "edge_type": "ref"}, {"source": "28", "target": "520_11", "edge_type": "ref"}, {"source": "520_18", "target": "520_11", "edge_type": "ref"}, {"source": "520_19", "target": "520_11", "edge_type": "ref"}, {"source": "28", "target": "520_12", "edge_type": "ref"}, {"source": "520_18", "target": "520_12", "edge_type": "ref"}, {"source": "520_19", "target": "520_12", "edge_type": "ref"}, {"source": "28", "target": "520_18", "edge_type": "ref"}, {"source": "28", "target": "520_19", "edge_type": "ref"}, {"source": "32", "target": "541", "edge_type": "ref"}, {"source": "542", "target": "541", "edge_type": "ref"}, {"source": "564", "target": "541", "edge_type": "ref"}, {"source": "32", "target": "542", "edge_type": "ref"}, {"source": "564", "target": "542", "edge_type": "ref"}, {"source": "33", "target": "548_2", "edge_type": "ref"}, {"source": "565", "target": "564", "edge_type": "ref"}, {"source": "666", "target": "590", "edge_type": "ref"}, {"source": "622", "target": "597", "edge_type": "ref"}, {"source": "1036", "target": "597", "edge_type": "ref"}, {"source": "1041", "target": "597", "edge_type": "ref"}, {"source": "622", "target": "599", "edge_type": "ref"}, {"source": "1040", "target": "599", "edge_type": "ref"}, {"source": "1", "target": "6", "edge_type": "ref"}, {"source": "7", "target": "6", "edge_type": "ref"}, {"source": "12", "target": "6", "edge_type": "ref"}, {"source": "622", "target": "600", "edge_type": "ref"}, {"source": "1036", "target": "600", "edge_type": "ref"}, {"source": "1041", "target": "600", "edge_type": "ref"}, {"source": "5", "target": "602", "edge_type": "ref"}, {"source": "13", "target": "602", "edge_type": "ref"}, {"source": "7", "target": "621", "edge_type": "ref"}, {"source": "1040", "target": "621", "edge_type": "ref"}, {"source": "671", "target": "644", "edge_type": "ref"}, {"source": "852", "target": "644", "edge_type": "ref"}, {"source": "876_3", "target": "644", "edge_type": "ref"}, {"source": "876_5", "target": "644", "edge_type": "ref"}, {"source": "876_8", "target": "644", "edge_type": "ref"}, {"source": "876_10", "target": "644", "edge_type": "ref"}, {"source": "1012", "target": "644", "edge_type": "ref"}, {"source": "671", "target": "645", "edge_type": "ref"}, {"source": "701", "target": "645", "edge_type": "ref"}, {"source": "926", "target": "645", "edge_type": "ref"}, {"source": "940", "target": "645", "edge_type": "ref"}, {"source": "944", "target": "645", "edge_type": "ref"}, {"source": "1012", "target": "645", "edge_type": "ref"}, {"source": "665", "target": "646", "edge_type": "ref"}, {"source": "671", "target": "646", "edge_type": "ref"}, {"source": "701", "target": "646", "edge_type": "ref"}, {"source": "926", "target": "646", "edge_type": "ref"}, {"source": "940", "target": "646", "edge_type": "ref"}, {"source": "944", "target": "646", "edge_type": "ref"}, {"source": "1012", "target": "646", "edge_type": "ref"}, {"source": "665", "target": "647", "edge_type": "ref"}, {"source": "671", "target": "647", "edge_type": "ref"}, {"source": "701", "target": "647", "edge_type": "ref"}, {"source": "944", "target": "647", "edge_type": "ref"}, {"source": "1012", "target": "647", "edge_type": "ref"}, {"source": "36", "target": "648", "edge_type": "ref"}, {"source": "665", "target": "648", "edge_type": "ref"}, {"source": "671", "target": "648", "edge_type": "ref"}, {"source": "1018", "target": "648", "edge_type": "ref"}, {"source": "36", "target": "648_2", "edge_type": "ref"}, {"source": "671", "target": "648_2", "edge_type": "ref"}, {"source": "1018", "target": "648_2", "edge_type": "ref"}, {"source": "665", "target": "650", "edge_type": "ref"}, {"source": "671", "target": "650", "edge_type": "ref"}, {"source": "926", "target": "650", "edge_type": "ref"}, {"source": "940", "target": "650", "edge_type": "ref"}, {"source": "944", "target": "650", "edge_type": "ref"}, {"source": "1012", "target": "650", "edge_type": "ref"}, {"source": "831", "target": "654", "edge_type": "ref"}, {"source": "852", "target": "654", "edge_type": "ref"}, {"source": "876_3", "target": "654", "edge_type": "ref"}, {"source": "876_5", "target": "654", "edge_type": "ref"}, {"source": "876_8", "target": "654", "edge_type": "ref"}, {"source": "876_10", "target": "654", "edge_type": "ref"}, {"source": "831", "target": "655", "edge_type": "ref"}, {"source": "852", "target": "655", "edge_type": "ref"}, {"source": "876_3", "target": "655", "edge_type": "ref"}, {"source": "876_5", "target": "655", "edge_type": "ref"}, {"source": "876_8", "target": "655", "edge_type": "ref"}, {"source": "876_10", "target": "655", "edge_type": "ref"}, {"source": "1", "target": "7", "edge_type": "ref"}, {"source": "4", "target": "7", "edge_type": "ref"}, {"source": "10", "target": "7", "edge_type": "ref"}, {"source": "11", "target": "7", "edge_type": "ref"}, {"source": "15", "target": "7", "edge_type": "ref"}, {"source": "17", "target": "722", "edge_type": "ref"}, {"source": "35", "target": "724", "edge_type": "ref"}, {"source": "934", "target": "724", "edge_type": "ref"}, {"source": "749", "target": "728", "edge_type": "ref"}, {"source": "3", "target": "731", "edge_type": "ref"}, {"source": "740", "target": "731", "edge_type": "ref"}, {"source": "744", "target": "731", "edge_type": "ref"}, {"source": "12", "target": "738", "edge_type": "ref"}, {"source": "764", "target": "738", "edge_type": "ref"}, {"source": "799", "target": "738", "edge_type": "ref"}, {"source": "812", "target": "738", "edge_type": "ref"}, {"source": "740", "target": "739", "edge_type": "ref"}, {"source": "764", "target": "739", "edge_type": "ref"}, {"source": "799", "target": "739", "edge_type": "ref"}, {"source": "812", "target": "739", "edge_type": "ref"}, {"source": "3", "target": "740", "edge_type": "ref"}, {"source": "9", "target": "747", "edge_type": "ref"}, {"source": "764", "target": "747", "edge_type": "ref"}, {"source": "808", "target": "747", "edge_type": "ref"}, {"source": "812", "target": "747", "edge_type": "ref"}, {"source": "3", "target": "749", "edge_type": "ref"}, {"source": "6", "target": "749", "edge_type": "ref"}, {"source": "17", "target": "749", "edge_type": "ref"}, {"source": "308_2", "target": "749", "edge_type": "ref"}, {"source": "824_3", "target": "749", "edge_type": "ref"}, {"source": "9", "target": "764", "edge_type": "ref"}, {"source": "17", "target": "766", "edge_type": "ref"}, {"source": "308_2", "target": "766", "edge_type": "ref"}, {"source": "749", "target": "766", "edge_type": "ref"}, {"source": "766_2", "target": "766", "edge_type": "ref"}, {"source": "766_3", "target": "766", "edge_type": "ref"}, {"source": "771", "target": "766", "edge_type": "ref"}, {"source": "788", "target": "766", "edge_type": "ref"}, {"source": "824_3", "target": "766", "edge_type": "ref"}, {"source": "749", "target": "766_2", "edge_type": "ref"}, {"source": "771", "target": "766_2", "edge_type": "ref"}, {"source": "788", "target": "766_2", "edge_type": "ref"}, {"source": "3", "target": "766_3", "edge_type": "ref"}, {"source": "308_2", "target": "766_3", "edge_type": "ref"}, {"source": "749", "target": "766_3", "edge_type": "ref"}, {"source": "771", "target": "766_3", "edge_type": "ref"}, {"source": "788", "target": "766_3", "edge_type": "ref"}, {"source": "10", "target": "768", "edge_type": "ref"}, {"source": "749", "target": "768", "edge_type": "ref"}, {"source": "771", "target": "768", "edge_type": "ref"}, {"source": "749", "target": "769", "edge_type": "ref"}, {"source": "771", "target": "769", "edge_type": "ref"}, {"source": "808", "target": "769", "edge_type": "ref"}, {"source": "3", "target": "771", "edge_type": "ref"}, {"source": "17", "target": "771", "edge_type": "ref"}, {"source": "308_2", "target": "771", "edge_type": "ref"}, {"source": "824_3", "target": "771", "edge_type": "ref"}, {"source": "3", "target": "772", "edge_type": "ref"}, {"source": "774", "target": "772", "edge_type": "ref"}, {"source": "778", "target": "772", "edge_type": "ref"}, {"source": "4", "target": "774", "edge_type": "ref"}, {"source": "772", "target": "774", "edge_type": "ref"}, {"source": "778", "target": "774", "edge_type": "ref"}, {"source": "4", "target": "777", "edge_type": "ref"}, {"source": "778", "target": "777", "edge_type": "ref"}, {"source": "4", "target": "778", "edge_type": "ref"}, {"source": "3", "target": "788", "edge_type": "ref"}, {"source": "17", "target": "788", "edge_type": "ref"}, {"source": "308_2", "target": "788", "edge_type": "ref"}, {"source": "824_3", "target": "788", "edge_type": "ref"}, {"source": "1", "target": "8", "edge_type": "ref"}, {"source": "13", "target": "8", "edge_type": "ref"}, {"source": "4", "target": "808", "edge_type": "ref"}, {"source": "6", "target": "819", "edge_type": "ref"}, {"source": "18", "target": "819", "edge_type": "ref"}, {"source": "19", "target": "819", "edge_type": "ref"}, {"source": "14", "target": "819", "edge_type": "ref"}, {"source": "749", "target": "819", "edge_type": "ref"}, {"source": "876_5", "target": "824", "edge_type": "ref"}, {"source": "876_10", "target": "824", "edge_type": "ref"}, {"source": "831", "target": "830", "edge_type": "ref"}, {"source": "876_5", "target": "832", "edge_type": "ref"}, {"source": "876_10", "target": "832", "edge_type": "ref"}, {"source": "852", "target": "843", "edge_type": "ref"}, {"source": "876_2", "target": "843", "edge_type": "ref"}, {"source": "876_3", "target": "843", "edge_type": "ref"}, {"source": "876_7", "target": "843", "edge_type": "ref"}, {"source": "876_8", "target": "843", "edge_type": "ref"}, {"source": "852", "target": "844", "edge_type": "ref"}, {"source": "876_2", "target": "844", "edge_type": "ref"}, {"source": "876_3", "target": "844", "edge_type": "ref"}, {"source": "876_7", "target": "844", "edge_type": "ref"}, {"source": "876_8", "target": "844", "edge_type": "ref"}, {"source": "3", "target": "846", "edge_type": "ref"}, {"source": "852", "target": "846", "edge_type": "ref"}, {"source": "876_2", "target": "846", "edge_type": "ref"}, {"source": "876_3", "target": "846", "edge_type": "ref"}, {"source": "876_7", "target": "846", "edge_type": "ref"}, {"source": "876_8", "target": "846", "edge_type": "ref"}, {"source": "852", "target": "847", "edge_type": "ref"}, {"source": "876_2", "target": "847", "edge_type": "ref"}, {"source": "876_3", "target": "847", "edge_type": "ref"}, {"source": "876_7", "target": "847", "edge_type": "ref"}, {"source": "876_8", "target": "847", "edge_type": "ref"}, {"source": "867", "target": "856", "edge_type": "ref"}, {"source": "867", "target": "857", "edge_type": "ref"}, {"source": "852", "target": "859_2", "edge_type": "ref"}, {"source": "876_3", "target": "859_2", "edge_type": "ref"}, {"source": "876_5", "target": "859_2", "edge_type": "ref"}, {"source": "876_8", "target": "859_2", "edge_type": "ref"}, {"source": "876_10", "target": "859_2", "edge_type": "ref"}, {"source": "852", "target": "859_3", "edge_type": "ref"}, {"source": "876_3", "target": "859_3", "edge_type": "ref"}, {"source": "876_5", "target": "859_3", "edge_type": "ref"}, {"source": "876_8", "target": "859_3", "edge_type": "ref"}, {"source": "876_10", "target": "859_3", "edge_type": "ref"}, {"source": "852", "target": "861", "edge_type": "ref"}, {"source": "867", "target": "861", "edge_type": "ref"}, {"source": "876_3", "target": "861", "edge_type": "ref"}, {"source": "876_5", "target": "861", "edge_type": "ref"}, {"source": "876_8", "target": "861", "edge_type": "ref"}, {"source": "876_10", "target": "861", "edge_type": "ref"}, {"source": "852", "target": "862", "edge_type": "ref"}, {"source": "876_3", "target": "862", "edge_type": "ref"}, {"source": "876_5", "target": "862", "edge_type": "ref"}, {"source": "876_8", "target": "862", "edge_type": "ref"}, {"source": "876_10", "target": "862", "edge_type": "ref"}, {"source": "867", "target": "866", "edge_type": "ref"}, {"source": "8", "target": "872", "edge_type": "ref"}, {"source": "876_10", "target": "876_5", "edge_type": "ref"}, {"source": "15", "target": "876_9", "edge_type": "ref"}, {"source": "18", "target": "876_9", "edge_type": "ref"}, {"source": "876_10", "target": "876_9", "edge_type": "ref"}, {"source": "889", "target": "887", "edge_type": "ref"}, {"source": "901", "target": "887", "edge_type": "ref"}, {"source": "901", "target": "889", "edge_type": "ref"}, {"source": "887", "target": "891", "edge_type": "ref"}, {"source": "30", "target": "895", "edge_type": "ref"}, {"source": "2", "target": "897_2", "edge_type": "ref"}, {"source": "1", "target": "9", "edge_type": "ref"}, {"source": "13", "target": "9", "edge_type": "ref"}, {"source": "901", "target": "900", "edge_type": "ref"}, {"source": "902", "target": "900", "edge_type": "ref"}, {"source": "903", "target": "900", "edge_type": "ref"}, {"source": "904_2", "target": "900", "edge_type": "ref"}, {"source": "1046", "target": "900", "edge_type": "ref"}, {"source": "902", "target": "901", "edge_type": "ref"}, {"source": "903", "target": "901", "edge_type": "ref"}, {"source": "904_2", "target": "901", "edge_type": "ref"}, {"source": "1046", "target": "901", "edge_type": "ref"}, {"source": "19", "target": "902", "edge_type": "ref"}, {"source": "903", "target": "902", "edge_type": "ref"}, {"source": "904_2", "target": "902", "edge_type": "ref"}, {"source": "1046", "target": "902", "edge_type": "ref"}, {"source": "4", "target": "903", "edge_type": "ref"}, {"source": "31", "target": "903", "edge_type": "ref"}, {"source": "904", "target": "903", "edge_type": "ref"}, {"source": "904_3", "target": "903", "edge_type": "ref"}, {"source": "1046", "target": "903", "edge_type": "ref"}, {"source": "19", "target": "904", "edge_type": "ref"}, {"source": "904_3", "target": "904", "edge_type": "ref"}, {"source": "1046", "target": "904", "edge_type": "ref"}, {"source": "1047", "target": "904", "edge_type": "ref"}, {"source": "904_3", "target": "904_2", "edge_type": "ref"}, {"source": "3", "target": "904_3", "edge_type": "ref"}, {"source": "2", "target": "926", "edge_type": "ref"}, {"source": "936", "target": "926", "edge_type": "ref"}, {"source": "929", "target": "927", "edge_type": "ref"}, {"source": "934", "target": "927", "edge_type": "ref"}, {"source": "936", "target": "927", "edge_type": "ref"}, {"source": "950", "target": "927", "edge_type": "ref"}, {"source": "957", "target": "927", "edge_type": "ref"}, {"source": "21", "target": "929", "edge_type": "ref"}, {"source": "930", "target": "929", "edge_type": "ref"}, {"source": "931", "target": "929", "edge_type": "ref"}, {"source": "932", "target": "929", "edge_type": "ref"}, {"source": "934", "target": "929", "edge_type": "ref"}, {"source": "950", "target": "929", "edge_type": "ref"}, {"source": "957", "target": "929", "edge_type": "ref"}, {"source": "931", "target": "930", "edge_type": "ref"}, {"source": "932", "target": "930", "edge_type": "ref"}, {"source": "934", "target": "930", "edge_type": "ref"}, {"source": "947", "target": "930", "edge_type": "ref"}, {"source": "950", "target": "930", "edge_type": "ref"}, {"source": "957", "target": "930", "edge_type": "ref"}, {"source": "932", "target": "931", "edge_type": "ref"}, {"source": "934", "target": "931", "edge_type": "ref"}, {"source": "947", "target": "931", "edge_type": "ref"}, {"source": "950", "target": "931", "edge_type": "ref"}, {"source": "957", "target": "931", "edge_type": "ref"}, {"source": "947", "target": "932", "edge_type": "ref"}, {"source": "950", "target": "932", "edge_type": "ref"}, {"source": "957", "target": "932", "edge_type": "ref"}, {"source": "947", "target": "933", "edge_type": "ref"}, {"source": "950", "target": "933", "edge_type": "ref"}, {"source": "957", "target": "933", "edge_type": "ref"}, {"source": "35", "target": "934", "edge_type": "ref"}, {"source": "947", "target": "934", "edge_type": "ref"}, {"source": "950", "target": "934", "edge_type": "ref"}, {"source": "957", "target": "934", "edge_type": "ref"}, {"source": "2", "target": "936", "edge_type": "ref"}, {"source": "4", "target": "936", "edge_type": "ref"}, {"source": "35", "target": "936", "edge_type": "ref"}, {"source": "2", "target": "940", "edge_type": "ref"}, {"source": "4", "target": "940", "edge_type": "ref"}, {"source": "950", "target": "943", "edge_type": "ref"}, {"source": "950", "target": "944", "edge_type": "ref"}, {"source": "35", "target": "947", "edge_type": "ref"}, {"source": "35", "target": "950", "edge_type": "ref"}, {"source": "4", "target": "952", "edge_type": "ref"}, {"source": "897_2", "target": "952", "edge_type": "ref"}, {"source": "940", "target": "952", "edge_type": "ref"}, {"source": "953", "target": "952", "edge_type": "ref"}, {"source": "957", "target": "952", "edge_type": "ref"}, {"source": "4", "target": "953", "edge_type": "ref"}, {"source": "35", "target": "957", "edge_type": "ref"}, {"source": "1", "target": "968", "edge_type": "ref"}, {"source": "6", "target": "968", "edge_type": "ref"}, {"source": "970", "target": "968", "edge_type": "ref"}, {"source": "982", "target": "968", "edge_type": "ref"}, {"source": "1", "target": "970", "edge_type": "ref"}, {"source": "1", "target": "976", "edge_type": "ref"}, {"source": "982", "target": "976", "edge_type": "ref"}, {"source": "1", "target": "982", "edge_type": "ref"}, {"source": "2", "target": "1", "edge_type": "transitional"}, {"source": "3", "target": "1", "edge_type": "transitional"}, {"source": "4", "target": "1", "edge_type": "transitional"}, {"source": "6", "target": "1", "edge_type": "transitional"}, {"source": "7", "target": "1", "edge_type": "transitional"}, {"source": "10", "target": "1", "edge_type": "transitional"}, {"source": "36", "target": "1018", "edge_type": "transitional"}, {"source": "2", "target": "11", "edge_type": "transitional"}, {"source": "8", "target": "121_2", "edge_type": "transitional"}, {"source": "8", "target": "122", "edge_type": "transitional"}, {"source": "8", "target": "124", "edge_type": "transitional"}, {"source": "8", "target": "125", "edge_type": "transitional"}, {"source": "3", "target": "13", "edge_type": "transitional"}, {"source": "25", "target": "13", "edge_type": "transitional"}, {"source": "10", "target": "147", "edge_type": "transitional"}, {"source": "7", "target": "2", "edge_type": "transitional"}, {"source": "12", "target": "2", "edge_type": "transitional"}, {"source": "4", "target": "2", "edge_type": "transitional"}, {"source": "10", "target": "2", "edge_type": "transitional"}, {"source": "17", "target": "25", "edge_type": "transitional"}, {"source": "7", "target": "276", "edge_type": "transitional"}, {"source": "12", "target": "3", "edge_type": "transitional"}, {"source": "4", "target": "3", "edge_type": "transitional"}, {"source": "7", "target": "3", "edge_type": "transitional"}, {"source": "4", "target": "383", "edge_type": "transitional"}, {"source": "4", "target": "384", "edge_type": "transitional"}, {"source": "2", "target": "4", "edge_type": "transitional"}, {"source": "7", "target": "4", "edge_type": "transitional"}, {"source": "12", "target": "4", "edge_type": "transitional"}, {"source": "4", "target": "4", "edge_type": "transitional"}, {"source": "22", "target": "466", "edge_type": "transitional"}, {"source": "25", "target": "488", "edge_type": "transitional"}, {"source": "14", "target": "5", "edge_type": "transitional"}, {"source": "12", "target": "5", "edge_type": "transitional"}, {"source": "9", "target": "5", "edge_type": "transitional"}, {"source": "4", "target": "5", "edge_type": "transitional"}, {"source": "26", "target": "512", "edge_type": "transitional"}, {"source": "32", "target": "541", "edge_type": "transitional"}, {"source": "7", "target": "6", "edge_type": "transitional"}, {"source": "12", "target": "6", "edge_type": "transitional"}, {"source": "5", "target": "602", "edge_type": "transitional"}, {"source": "7", "target": "621", "edge_type": "transitional"}, {"source": "36", "target": "648", "edge_type": "transitional"}, {"source": "36", "target": "648_2", "edge_type": "transitional"}, {"source": "35", "target": "724", "edge_type": "transitional"}, {"source": "3", "target": "731", "edge_type": "transitional"}, {"source": "3", "target": "740", "edge_type": "transitional"}, {"source": "3", "target": "772", "edge_type": "transitional"}, {"source": "4", "target": "774", "edge_type": "transitional"}, {"source": "4", "target": "777", "edge_type": "transitional"}, {"source": "3", "target": "846", "edge_type": "transitional"}, {"source": "8", "target": "872", "edge_type": "transitional"}, {"source": "31", "target": "903", "edge_type": "transitional"}, {"source": "35", "target": "934", "edge_type": "transitional"}, {"source": "4", "target": "936", "edge_type": "transitional"}, {"source": "35", "target": "936", "edge_type": "transitional"}, {"source": "4", "target": "940", "edge_type": "transitional"}, {"source": "35", "target": "947", "edge_type": "transitional"}, {"source": "35", "target": "950", "edge_type": "transitional"}, {"source": "4", "target": "952", "edge_type": "transitional"}, {"source": "35", "target": "957", "edge_type": "transitional"}, {"source": "6", "target": "968", "edge_type": "transitional"}, {"source": "465_7", "target": "465_6", "edge_type": "yomikae"}, {"source": "468", "target": "468", "edge_type": "yomikae"}, {"source": "469", "target": "469", "edge_type": "yomikae"}, {"source": "772", "target": "772", "edge_type": "yomikae"}, {"source": "4", "target": "777", "edge_type": "yomikae"}, {"source": "3", "target": "904_3", "edge_type": "yomikae"}, {"source": "936", "target": "927", "edge_type": "yomikae"}]}, "meta": {"root_id": "明治29年法律第89号", "root_title": "民法", "mode": "amends", "chapters": [{"num": "1", "title": "第一章 通則", "color": "#4e79a7"}, {"num": "3", "title": "第三章 法人", "color": "#f28e2b"}, {"num": "4", "title": "第四章 地上権", "color": "#e15759"}, {"num": "5", "title": "第五章 永小作権", "color": "#76b7b2"}, {"num": "7", "title": "第七章 留置権", "color": "#59a14f"}, {"num": "2", "title": "第二章 相続人", "color": "#edc948"}, {"num": "6", "title": "第六章 相続人の不存在", "color": "#b07aa1"}, {"num": "9", "title": "第九章 遺留分", "color": "#ff9da7"}], "has_intra": true, "generated_at": "2026-04-03T10:04:49.596680"}};
+
+/* ── Shared constants ── */
+var TC = {
+  Act:'#4e79a7', CabinetOrder:'#f28e2b', MinisterialOrdinance:'#e15759',
+  Rule:'#76b7b2', ImperialOrder:'#59a14f', Constitution:'#edc948',
+  Other:'#b07aa1'
+};
+var TJ = {
+  Act:'法律', CabinetOrder:'政令',
+  MinisterialOrdinance:'省令', Rule:'規則',
+  ImperialOrder:'勅令', Constitution:'憲法',
+  Other:'その他', Misc:'その他'
+};
+var EC = {
+  cites:'#999', amends:'#e15759', repeals:'#333', delegation:'#f28e2b',
+  ref:'#4e79a7', yomikae:'#76b7b2', junyo:'#59a14f', penalty:'#af7aa1',
+  transitional:'#b07aa1', related:'#2a9d8f'
+};
+var ED = {
+  cites:'', amends:'', repeals:'8,4', delegation:'',
+  ref:'', yomikae:'4,4', junyo:'4,4', penalty:'8,4', transitional:'4,4',
+  related:''
+};
+var EJ = {
+  cites:'引用', amends:'改正', repeals:'廃止',
+  delegation:'委任', ref:'参照',
+  yomikae:'読替', junyo:'準用',
+  penalty:'罰則', transitional:'経過措置',
+  related:'関連'
+};
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+var GP = [
+  '#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f',
+  '#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac',
+  '#86bcb6','#8cd17d','#e377c2','#7f7f7f'
+];
+/* ── Shared SVG setup (runs once) ── */
+var W = window.innerWidth, H = window.innerHeight;
+var svg = d3.select('#graph');
+var g = svg.append('g');
+var zoomBehavior = d3.zoom().scaleExtent([0.1, 5])
+  .on('zoom', function(e) { g.attr('transform', e.transform); });
+svg.call(zoomBehavior);
+
+var defs = svg.append('defs');
+Object.keys(EC).forEach(function(t) {
+  defs.append('marker').attr('id', 'a-' + t)
+    .attr('viewBox', '0 0 10 10').attr('refX', 10).attr('refY', 5)
+    .attr('markerWidth', 6).attr('markerHeight', 6)
+    .attr('orient', 'auto-start-reverse')
+    .append('path').attr('d', 'M0,0 L10,5 L0,10 z')
+    .attr('fill', EC[t]);
+});
+
+var tip = d3.select('#tooltip');
+function trunc(s, n) {
+  return s && s.length > n ? s.substring(0, n) + '…' : s;
+}
+
+/* ── State ── */
+var sim = null;
+var fitTimer = null;
+var familyLayout = 'tree';
+var lastFamilyRoot = null;
+var mmInstance = null;
+
+function buildMarkmapTree(nodes, links, CC, CJ) {
+  var treeLinks = links.filter(function(l) { return l._tree; });
+  var childMap = {};
+  nodes.forEach(function(n) { childMap[n.id] = []; });
+  treeLinks.forEach(function(l) {
+    if (childMap[l.source]) childMap[l.source].push(l.target);
+  });
+  var nMap = {};
+  nodes.forEach(function(n) { nMap[n.id] = n; });
+  var rn = nodes.find(function(n) { return n.is_root; });
+  if (!rn) return null;
+  function toMM(id) {
+    var nd = nMap[id];
+    if (!nd) return null;
+    var color = CC[nd.family_role] || CC.other;
+    var typLabel = TJ[nd.law_type] || '';
+    var roleLabel = CJ[nd.family_role] || '';
+    var html = '<span data-node-id="' + esc(nd.id) + '">';
+    html += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + color + ';margin-right:6px;vertical-align:middle"></span>';
+    html += '<b>' + esc(nd.label) + '</b>';
+    if (nd.abbrev) html += ' <span style="color:#888;font-size:0.85em">(' + esc(nd.abbrev) + ')</span>';
+    var tags = [];
+    if (typLabel) tags.push(typLabel);
+    if (roleLabel && roleLabel !== '本法律') tags.push(roleLabel);
+    if (nd.status) tags.push(nd.status);
+    if (tags.length) html += ' <span style="color:#999;font-size:0.8em">' + tags.join(' \u00b7 ') + '</span>';
+    html += '</span>';
+    var children = (childMap[id] || []).map(toMM).filter(Boolean);
+    return { content: html, children: children };
+  }
+  return toMM(rn.id);
+}
+
+/* ── Auto-fit helper ── */
+function autoFit(ns) {
+  var pad = 60;
+  var mnX = Infinity, mxX = -Infinity, mnY = Infinity, mxY = -Infinity;
+  ns.forEach(function(d) {
+    if (d.x < mnX) mnX = d.x; if (d.x > mxX) mxX = d.x;
+    if (d.y < mnY) mnY = d.y; if (d.y > mxY) mxY = d.y;
+  });
+  if (mnX < mxX && mnY < mxY) {
+    var dx = mxX - mnX + pad * 2, dy = mxY - mnY + pad * 2;
+    var sc = Math.min(W / dx, (H - 50) / dy, 2);
+    var tx = W / 2 - (mnX + mxX) / 2 * sc;
+    var ty = (H + 50) / 2 - (mnY + mxY) / 2 * sc;
+    svg.transition().duration(750).call(zoomBehavior.transform,
+      d3.zoomIdentity.translate(tx, ty).scale(sc));
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   renderGraph(viewType) — main rendering function, called on view switch
+   ══════════════════════════════════════════════════════════════════════ */
+function renderGraph(viewType) {
+  if (\!DATA) return;
+  if (fitTimer) clearTimeout(fitTimer);
+  if (sim) sim.stop();
+  g.selectAll('*').remove();
+  svg.transition().duration(0).call(zoomBehavior.transform, d3.zoomIdentity);
+  d3.select('#graph').style('display', 'block');
+  d3.select('#markmap-svg').style('display', 'none');
+
+  var mode = DATA.meta.mode;
+  var hasIntra = DATA.meta.has_intra;
+  var isIntra = (viewType === 'intra');
+  var dataset = isIntra
+    ? DATA.intra
+    : {nodes: DATA.nodes, edges: DATA.edges};
+  if (!dataset || !dataset.nodes || dataset.nodes.length === 0) return;
+
+  var nodes = dataset.nodes.map(function(d) { return Object.assign({}, d); });
+  var links = dataset.edges.map(function(d) { return Object.assign({}, d); });
+
+  /* Back button visibility */
+  d3.select('#back-btn').style('display', isIntra ? 'inline-block' : 'none');
+
+  /* ── Family layout (tree / graph toggle, early return) ── */
+  if (!isIntra && mode === 'family') {
+    if (DATA.meta.root_id !== lastFamilyRoot) {
+      familyLayout = 'tree';
+      lastFamilyRoot = DATA.meta.root_id;
+    }
+    var CC = {parent:'#4e79a7',enforcement_order:'#f28e2b',enforcement_rules:'#e15759',
+              article_specific:'#76b7b2',transitional:'#b07aa1',other:'#bab0ac'};
+    var CJ = {parent:'本法律',enforcement_order:'施行令',enforcement_rules:'施行規則',
+              article_specific:'条文委任政省令',transitional:'改正関連',other:'その他'};
+    function fNR(d){return d.is_input?14:8;}
+    function fNC(d){return CC[d.family_role]||CC.other;}
+    function fTip(n){
+      var h='<b>'+esc(n.label)+'</b>';
+      if(n.abbrev) h+=' <span class="tt-sub">('+esc(n.abbrev)+')</span>';
+      var tags=[];
+      if(TJ[n.law_type]) tags.push(TJ[n.law_type]);
+      if(CJ[n.family_role]) tags.push(CJ[n.family_role]);
+      if(n.status) tags.push(n.status);
+      if(tags.length) h+='<br><span class="tt-sub">'+tags.join(' / ')+'</span>';
+      if(n.law_num&&n.law_num!==n.label)
+        h+='<br><span class="tt-detail">'+esc(n.law_num)+'</span>';
+      if(n.enforcement_date)
+        h+='<br><span class="tt-detail">施行日: '+esc(n.enforcement_date)+'</span>';
+      if(n.article_count)
+        h+='<br><span class="tt-detail">条文数: '+n.article_count+'</span>';
+      return h;
+    }
+
+    if (familyLayout === 'tree') {
+      /* ── Markmap tree layout ── */
+      d3.select('#graph').style('display', 'none');
+      var mmSvgEl = d3.select('#markmap-svg')
+        .attr('width', W).attr('height', H)
+        .style('display', 'block');
+      var mmRoot = buildMarkmapTree(nodes, links, CC, CJ);
+      if (!mmRoot) return;
+      if (mmInstance) {
+        mmInstance.setData(mmRoot).then(function() { mmInstance.fit(); });
+      } else {
+        mmInstance = markmap.Markmap.create(
+          mmSvgEl.node(),
+          { initialExpandLevel: -1, maxWidth: 300, fitRatio: 0.85 },
+          mmRoot
+        );
+      }
+      /* Tooltip via event delegation */
+      var nMap = {};
+      nodes.forEach(function(n) { nMap[n.id] = n; });
+      mmSvgEl.on('mouseover.tip', function(e) {
+        var el = e.target.closest('[data-node-id]');
+        if (!el) return;
+        var nd = nMap[el.getAttribute('data-node-id')];
+        if (nd) tip.html(fTip(nd)).style('display', 'block');
+      }).on('mousemove.tip', function(e) {
+        if (tip.style('display') !== 'none')
+          tip.style('left', (e.pageX + 12) + 'px').style('top', (e.pageY + 12) + 'px');
+      }).on('mouseout.tip', function(e) {
+        if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('[data-node-id]'))
+          tip.style('display', 'none');
+      });
+    } else {
+      /* ── Force-directed graph layout ── */
+      nodes.forEach(function(d){
+        d.x=W/2+(Math.random()-0.5)*200;
+        d.y=80+(d.depth||0)*180;
+      });
+      sim=d3.forceSimulation(nodes)
+        .force('link',d3.forceLink(links).id(function(d){return d.id;}).distance(150))
+        .force('charge',d3.forceManyBody().strength(-500))
+        .force('collide',d3.forceCollide().radius(20))
+        .force('y',d3.forceY(function(d){return 80+(d.depth||0)*180;}).strength(0.5))
+        .force('x',d3.forceX(W/2).strength(0.05));
+      var link=g.append('g').selectAll('line').data(links).join('line')
+        .attr('stroke','#ccc').attr('stroke-width',1.5).attr('stroke-opacity',0.6);
+      var node=g.append('g').selectAll('g').data(nodes).join('g')
+        .call(d3.drag()
+          .on('start',function(e,d){if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;})
+          .on('drag',function(e,d){d.fx=e.x;d.fy=e.y;})
+          .on('end',function(e,d){if(!e.active)sim.alphaTarget(0);}));
+      node.append('circle')
+        .attr('r',function(d){return fNR(d);})
+        .attr('fill',function(d){return fNC(d);})
+        .attr('stroke',function(d){return d.is_input?'#333':'#fff';})
+        .attr('stroke-width',function(d){return d.is_input?3:1.5;})
+        .style('cursor','grab');
+      node.append('text').attr('class','node-label')
+        .attr('x',function(d){return fNR(d)+4;}).attr('y',4)
+        .text(function(d){return trunc(d.label,20);});
+      node.on('mouseover',function(e,d){tip.html(fTip(d)).style('display','block');})
+        .on('mousemove',function(e){tip.style('left',(e.pageX+12)+'px').style('top',(e.pageY+12)+'px');})
+        .on('mouseout',function(){tip.style('display','none');});
+      node.on('dblclick',function(e,d){d.fx=null;d.fy=null;sim.alphaTarget(0.1).restart();});
+      if (typeof _onNodeClick === 'function') {
+        node.style('cursor','pointer').on('click',function(e,d){
+          if(\!d.is_input) _onNodeClick(d.label);
+        });
+      }
+      sim.on('tick',function(){
+        link.attr('x1',function(d){return d.source.x;})
+          .attr('y1',function(d){return d.source.y;})
+          .attr('x2',function(d){return d.target.x;})
+          .attr('y2',function(d){return d.target.y;});
+        node.attr('transform',function(d){return 'translate('+d.x+','+d.y+')';});
+      });
+      fitTimer=setTimeout(function(){autoFit(nodes);},1500);
+    }
+
+    /* ── Controls (shared) ── */
+    var ctrl=d3.select('#controls'); ctrl.selectAll('*').remove();
+    ctrl.append('h3').text('レイアウト');
+    ctrl.append('button').attr('class','reset')
+      .text(familyLayout==='tree'?'グラフ表示に切替':'ツリー表示に切替')
+      .on('click',function(){
+        familyLayout=familyLayout==='tree'?'graph':'tree';
+        renderGraph('inter');
+      });
+    var ls=ctrl.append('div').attr('class','legend-section');
+    ls.append('h3').text('分類');
+    var cats=Array.from(new Set(nodes.map(function(d){return d.family_role;})));
+    cats.forEach(function(c){
+      var it=ls.append('div').attr('class','legend-item');
+      it.append('span').attr('class','legend-circle').style('background',CC[c]||CC.other);
+      it.append('span').text(CJ[c]||c);
+    });
+    ctrl.append('div').attr('class','stats').text(nodes.length+' 法令');
+    ctrl.append('button').attr('class','reset').text('表示リセット')
+      .on('click',function(){
+        if (familyLayout==='tree' && mmInstance) { mmInstance.fit(); }
+        else { svg.transition().duration(500).call(zoomBehavior.transform,d3.zoomIdentity); }
+      });
+    return;
+  }
+
+  /* ── Node radius ── */
+  var relMaxT = (mode==='related') ? d3.max(nodes.filter(function(n){return n.node_role==='density';}),function(n){return n.total;})||1 : 1;
+  function nodeR(d) {
+    if (d.is_overflow) return 6;
+    if (isIntra) return 8;
+    if (mode==='related') {
+      if (d.is_root) return 20;
+      if (d.node_role==='density') return 8+8*Math.sqrt((d.total||0)/relMaxT);
+      return 7;
+    }
+    if (d.is_root) return 18;
+    return 10;
+  }
+
+  /* ── Group color map (article-xref) ── */
+  var groupColor = {};
+  var groupName = {};
+  if (mode === 'article-xref') {
+    var gkeys = Array.from(new Set(
+      nodes.map(function(d) { return d.group; }).filter(Boolean)));
+    gkeys.forEach(function(gk, i) {
+      groupColor[gk] = GP[i % GP.length];
+      var rep = nodes.find(function(d) { return d.group === gk; });
+      groupName[gk] = rep ? (rep.law_name || gk) : gk;
+    });
+  }
+
+  /* ── Node color ── */
+  var RC = {density:'#2a9d8f',amending:'#e15759',repealed_by:'#333',repeals:'#333',root:null};
+  function nodeColor(d) {
+    if (d.is_overflow) return '#ddd';
+    if (isIntra) return d.chapter_color || '#999';
+    if (mode === 'related' && d.node_role && d.node_role !== 'root')
+      return RC[d.node_role] || TC.Other;
+    if (mode === 'article-xref' && d.group) return groupColor[d.group] || TC.Other;
+    return TC[d.law_type] || TC.Other;
+  }
+
+  /* ── Initial positions ── */
+  if (isIntra) {
+    var maxOrd = d3.max(nodes, function(d) { return d.ordinal || 0; }) || 1;
+    nodes.forEach(function(d) {
+      d.x = W / 2 + (Math.random() - 0.5) * 200;
+      d.y = 80 + ((d.ordinal || 0) / maxOrd) * (H - 160);
+    });
+  } else if (mode === 'amends') {
+    var dates = nodes.filter(function(d) { return d.amend_date; })
+      .map(function(d) { return new Date(d.amend_date); });
+    if (dates.length > 0) {
+      var timeScale = d3.scaleTime().domain(d3.extent(dates))
+        .range([120, W - 120]);
+      nodes.forEach(function(d) {
+        if (d.is_root) { d.x = W - 80; d.y = H / 2; d.fx = W - 80; d.fy = H / 2; }
+        else if (d.amend_date) {
+          d.x = timeScale(new Date(d.amend_date));
+          d.y = H / 2 + (Math.random() - 0.5) * 200;
+        } else { d.x = 60; d.y = H / 2; }
+      });
+      g.append('g').attr('class', 'time-axis')
+        .attr('transform', 'translate(0,' + (H - 50) + ')')
+        .call(d3.axisBottom(timeScale).ticks(d3.timeYear.every(5))
+          .tickFormat(d3.timeFormat('%Y')));
+    }
+  } else if (mode === 'related') {
+    var rRoot = nodes.find(function(d){return d.is_root;});
+    if (rRoot) { rRoot.x=W/2; rRoot.y=H/2; rRoot.fx=W/2; rRoot.fy=H/2; }
+    var dNodes=nodes.filter(function(d){return d.node_role==='density';});
+    dNodes.forEach(function(d,i){
+      var a=(i/dNodes.length)*2*Math.PI - Math.PI/2;
+      var r=120+80*(1-(d.total||0)/relMaxT);
+      d.x=W/2+Math.cos(a)*r; d.y=H/2+Math.sin(a)*r;
+    });
+    var oNodes=nodes.filter(function(d){return !d.is_root && d.node_role!=='density';});
+    oNodes.forEach(function(d,i){
+      var a=(i/Math.max(oNodes.length,1))*2*Math.PI;
+      d.x=W/2+Math.cos(a)*280; d.y=H/2+Math.sin(a)*280;
+    });
+  }
+
+  /* ── Simulation ── */
+  sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(function(d) { return d.id; })
+      .distance(isIntra ? 50 : mode==='related' ? function(l){
+        if(l.edge_type==='related') return 80+120*(1-(l.total||0)/relMaxT);
+        return 200;
+      } : 100))
+    .force('charge', d3.forceManyBody()
+      .strength(isIntra ? -60 : mode === 'amends' ? -100 : mode==='related' ? -300 : -200))
+    .force('collide', d3.forceCollide()
+      .radius(function(d) { return nodeR(d) + (isIntra ? 4 : 8); }));
+
+  if (isIntra) {
+    /* Chapter-based clustering */
+    var chNums = Array.from(new Set(
+      nodes.map(function(d) { return d.chapter_num || ''; })));
+    if (chNums.length > 1) {
+      var chAngle = {};
+      chNums.forEach(function(ch, i) {
+        chAngle[ch] = (i / chNums.length) * 2 * Math.PI;
+      });
+      var chR = Math.min(W, H) * 0.3;
+      sim.force('cx', d3.forceX(function(d) {
+        var a = chAngle[d.chapter_num || ''] || 0;
+        return W / 2 + Math.cos(a) * chR;
+      }).strength(0.12));
+      sim.force('cy', d3.forceY(function(d) {
+        var a = chAngle[d.chapter_num || ''] || 0;
+        return H / 2 + Math.sin(a) * chR;
+      }).strength(0.12));
+    } else {
+      sim.force('center', d3.forceCenter(W / 2, H / 2));
+    }
+  } else if (mode === 'amends') {
+    sim.force('x', d3.forceX(function(d) { return d.x || W / 2; }).strength(0.3));
+    sim.force('y', d3.forceY(H / 2).strength(0.05));
+  } else if (mode === 'related') {
+    sim.force('center', d3.forceCenter(W / 2, H / 2));
+  } else if (mode === 'article-xref') {
+    sim.force('center', d3.forceCenter(W / 2, H / 2));
+    if (gkeys.length > 1) {
+      var ga = {};
+      gkeys.forEach(function(gp, i) {
+        ga[gp] = (i / gkeys.length) * 2 * Math.PI;
+      });
+      var gr = Math.min(W, H) * 0.25;
+      sim.force('gx', d3.forceX(function(d) {
+        return d.is_root ? W / 2 : W / 2 + Math.cos(ga[d.group] || 0) * gr;
+      }).strength(0.15));
+      sim.force('gy', d3.forceY(function(d) {
+        return d.is_root ? H / 2 : H / 2 + Math.sin(ga[d.group] || 0) * gr;
+      }).strength(0.15));
+    }
+  } else {
+    sim.force('center', d3.forceCenter(W / 2, H / 2));
+  }
+
+  if (!isIntra && mode === 'cites') {
+    var root = nodes.find(function(d) { return d.is_root; });
+    if (root) { root.fx = W / 2; root.fy = H / 2; }
+  }
+
+  /* ── Convex hulls for article-xref groups ── */
+  var hullG = g.append('g').attr('class', 'hulls');
+  var hullPaths = [];
+  if (mode === 'article-xref' && Object.keys(groupColor).length > 1) {
+    Object.keys(groupColor).forEach(function(gk) {
+      var p = hullG.append('path')
+        .attr('fill', groupColor[gk])
+        .attr('fill-opacity', 0.08)
+        .attr('stroke', groupColor[gk])
+        .attr('stroke-opacity', 0.25)
+        .attr('stroke-width', 1);
+      hullPaths.push({key: gk, path: p});
+    });
+  }
+  function updateHulls() {
+    hullPaths.forEach(function(hp) {
+      var pts = nodes.filter(function(d) { return d.group === hp.key; })
+        .map(function(d) { return [d.x, d.y]; });
+      if (pts.length >= 3) {
+        var hull = d3.polygonHull(pts);
+        if (hull) {
+          var cx = d3.mean(hull, function(p) { return p[0]; });
+          var cy = d3.mean(hull, function(p) { return p[1]; });
+          var pad = 20;
+          var expanded = hull.map(function(p) {
+            var dx = p[0] - cx, dy = p[1] - cy;
+            var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            return [p[0] + dx / dist * pad, p[1] + dy / dist * pad];
+          });
+          hp.path.attr('d', 'M' + expanded.join('L') + 'Z');
+        } else {
+          hp.path.attr('d', '');
+        }
+      } else {
+        hp.path.attr('d', '');
+      }
+    });
+  }
+
+  /* ── Render links ── */
+  var link = g.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke', function(d) { return EC[d.edge_type] || '#999'; })
+    .attr('stroke-dasharray', function(d) { return ED[d.edge_type] || ''; })
+    .attr('stroke-width', function(d) {
+      if (isIntra) return 1;
+      if (mode==='related' && d.edge_type==='related') return 1.5+3*(d.total||0)/relMaxT;
+      return 1.5;
+    })
+    .attr('stroke-opacity', isIntra ? 0.4 : 0.6)
+    .attr('marker-end', function(d) {
+      if (d.edge_type==='related') return '';
+      return 'url(#a-' + d.edge_type + ')';
+    });
+
+  /* ── Render nodes ── */
+  var node = g.append('g').selectAll('g').data(nodes).join('g')
+    .call(d3.drag()
+      .on('start', function(e, d) {
+        if (!e.active) sim.alphaTarget(0.3).restart();
+        d.fx = d.x; d.fy = d.y; })
+      .on('drag', function(e, d) { d.fx = e.x; d.fy = e.y; })
+      .on('end', function(e, d) {
+        if (!e.active) sim.alphaTarget(0); })
+    );
+
+  node.append('circle')
+    .attr('r', function(d) { return nodeR(d); })
+    .attr('fill', function(d) { return nodeColor(d); })
+    .attr('stroke', function(d) {
+      if (isIntra) return '#fff';
+      return d.is_root ? '#333' : '#fff';
+    })
+    .attr('stroke-width', function(d) {
+      if (isIntra) return 1;
+      return d.is_root ? 3 : 1.5;
+    })
+    .style('cursor', 'grab');
+
+  /* Drillable indicator on root node (inter view only) */
+  if (!isIntra && hasIntra) {
+    node.filter(function(d) { return d.is_root; })
+      .append('circle')
+      .attr('r', 9)
+      .attr('fill', 'none')
+      .attr('stroke', '#333')
+      .attr('stroke-dasharray', '3,2')
+      .attr('stroke-width', 1)
+      .style('pointer-events', 'none');
+  }
+
+  node.append('text').attr('class', 'node-label')
+    .attr('x', function(d) { return nodeR(d) + 4; }).attr('y', 4)
+    .text(function(d) { return trunc(d.label, isIntra ? 20 : 14); });
+
+  /* ── Double-click: drill down or unpin ── */
+  node.on('dblclick', function(e, d) {
+    e.preventDefault();
+    if (!isIntra && d.is_root && hasIntra) {
+      renderGraph('intra');
+    } else {
+      d.fx = null; d.fy = null;
+      sim.alphaTarget(0.1).restart();
+    }
+  });
+
+  /* ── Tooltips ── */
+  node.on('mouseover', function(e, d) {
+    var h = '<b>' + esc(d.label) + '</b>';
+    if (isIntra) {
+      if (d.caption) h += '<br><span class="tt-detail">' + esc(d.caption) + '</span>';
+      if (d.chapter) h += '<br><span class="tt-sub">' + esc(d.chapter) + '</span>';
+    } else {
+      if (d.abbrev) h += '  <span class="tt-sub">(' + esc(d.abbrev) + ')</span>';
+      if (d.law_name && d.law_name !== d.label) h += '<br>' + esc(d.law_name);
+      var tags = [];
+      if (TJ[d.law_type]) tags.push(TJ[d.law_type]);
+      if (d.status) tags.push(esc(d.status));
+      if (tags.length) h += '<br><span class="tt-sub">' + tags.join(' / ') + '</span>';
+      if (d.law_num && d.law_num !== d.label && d.law_num !== d.law_name)
+        h += '<br><span class="tt-detail">' + esc(d.law_num) + '</span>';
+      if (d.enforcement_date)
+        h += '<br><span class="tt-detail">施行日: ' + esc(d.enforcement_date) + '</span>';
+      if (d.category)
+        h += '<br><span class="tt-detail">分類: ' + esc(d.category) + '</span>';
+      if (d.article_count)
+        h += '<br><span class="tt-detail">本則条文数: ' + esc(d.article_count) + '</span>';
+      if (d.node_role==='density') {
+        h += '<br><span class="tt-detail">関連度: ' + d.density_rank + '位 (計' + d.total + '件)</span>';
+        h += '<br><span class="tt-detail">引用 出→' + d.outgoing + ' 入←' + d.incoming + '</span>';
+      }
+      if (d.amend_date)
+        h += '<br><span class="tt-detail">改正日: ' + esc(d.amend_date) + '</span>';
+      if (d.provision_context === 'suppl')
+        h += '<br><span class="tt-detail">附則</span>';
+      if (d.is_root && hasIntra)
+        h += '<br><span class="tt-drill">ダブルクリックで法令内を表示</span>';
+    }
+    tip.html(h).style('display', 'block');
+  }).on('mousemove', function(e) {
+    tip.style('left', (e.pageX + 12) + 'px')
+       .style('top', (e.pageY + 12) + 'px');
+  }).on('mouseout', function() { tip.style('display', 'none'); });
+
+  link.on('mouseover', function(e, d) {
+    var h = '<b>' + esc(EJ[d.edge_type] || d.edge_type) + '</b>';
+    if (d.source_articles)
+      h += '<br><span class="tt-detail">委任元: 第'
+        + esc(d.source_articles).split(',').join('条, 第') + '条</span>';
+    if (d.scope)
+      h += '<br><span class="tt-detail">範囲: ' + esc(d.scope) + '</span>';
+    if (d.amend_date)
+      h += '<br><span class="tt-detail">改正日: ' + esc(d.amend_date) + '</span>';
+    if (d.edge_type==='related')
+      h += '<br><span class="tt-detail">出→' + d.outgoing + ' 入←' + d.incoming + ' 計' + d.total + '</span>';
+    tip.html(h).style('display', 'block');
+  }).on('mousemove', function(e) {
+    tip.style('left', (e.pageX + 12) + 'px')
+       .style('top', (e.pageY + 12) + 'px');
+  }).on('mouseout', function() { tip.style('display', 'none'); });
+
+  /* ── Tick ── */
+  sim.on('tick', function() {
+    link.attr('x1', function(d) { return d.source.x; })
+      .attr('y1', function(d) { return d.source.y; })
+      .attr('x2', function(d) {
+        var dx = d.target.x - d.source.x, dy = d.target.y - d.source.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        return d.target.x - (dx / dist) * nodeR(d.target);
+      })
+      .attr('y2', function(d) {
+        var dx = d.target.x - d.source.x, dy = d.target.y - d.source.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        return d.target.y - (dy / dist) * nodeR(d.target);
+      });
+    node.attr('transform', function(d) {
+      return 'translate(' + d.x + ',' + d.y + ')';
+    });
+    updateHulls();
+  });
+
+  /* ── Controls ── */
+  var ctrl = d3.select('#controls');
+  ctrl.selectAll('*').remove();
+
+  /* Edge type checkboxes */
+  var eTypes = Array.from(new Set(links.map(function(d) { return d.edge_type; })));
+  if (eTypes.length > 0) {
+    ctrl.append('h3').text('エッジ種別');
+    eTypes.forEach(function(t) {
+      var lab = ctrl.append('label');
+      lab.append('input').attr('type', 'checkbox').property('checked', true)
+        .on('change', function() {
+          var vis = this.checked;
+          link.filter(function(d) { return d.edge_type === t; })
+            .style('display', vis ? null : 'none');
+        });
+      var sp = lab.append('span');
+      sp.append('span').style('color', EC[t] || '#999').text(' ■ ');
+      sp.append('span').text(EJ[t] || t);
+    });
+  }
+
+  /* Legend */
+  if (isIntra && DATA.meta.chapters && DATA.meta.chapters.length > 0) {
+    var ls = ctrl.append('div').attr('class', 'legend-section');
+    ls.append('h3').text('章');
+    DATA.meta.chapters.forEach(function(ch) {
+      var item = ls.append('div').attr('class', 'legend-item');
+      item.append('span').attr('class', 'legend-circle')
+        .style('background', ch.color);
+      item.append('span').text(trunc(ch.title, 20));
+    });
+  } else if (mode === 'article-xref' && Object.keys(groupColor).length > 0) {
+    var ls3 = ctrl.append('div').attr('class', 'legend-section');
+    ls3.append('h3').text('法令');
+    Object.keys(groupColor).forEach(function(gk) {
+      var item = ls3.append('div').attr('class', 'legend-item');
+      item.append('span').attr('class', 'legend-circle')
+        .style('background', groupColor[gk]);
+      item.append('span').text(trunc(groupName[gk] || gk, 24));
+    });
+  } else {
+    var nTypes = Array.from(new Set(nodes.map(function(d) { return d.law_type; })))
+      .filter(function(t) { return t !== 'Other' || nodes.some(
+        function(d) { return d.law_type === 'Other' && !d.is_overflow; }); });
+    if (nTypes.length > 0) {
+      var ls2 = ctrl.append('div').attr('class', 'legend-section');
+      ls2.append('h3').text('法令種別');
+      nTypes.forEach(function(t) {
+        var item = ls2.append('div').attr('class', 'legend-item');
+        item.append('span').attr('class', 'legend-circle')
+          .style('background', TC[t] || TC.Other);
+        item.append('span').text(TJ[t] || t);
+      });
+    }
+  }
+
+  ctrl.append('div').attr('class', 'stats')
+    .text(nodes.length + ' ノード / ' + links.length + ' エッジ'
+      + (isIntra ? ' (法令内)' : ''));
+
+  ctrl.append('button').attr('class', 'reset').text('表示リセット')
+    .on('click', function() {
+      svg.transition().duration(500)
+        .call(zoomBehavior.transform, d3.zoomIdentity);
+    });
+
+  /* Auto-fit */
+  fitTimer = setTimeout(function() { autoFit(nodes); }, 1500);
+}
+
+/* ── Back button ── */
+d3.select('#back-btn').on('click', function() { renderGraph('inter'); });
+
+renderGraph('inter');
+</script>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLI デモ — 法脈（Houmyaku）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans JP', 'Inter', system-ui, sans-serif;
+  background: #0f1b2d; color: #e2e8f0; line-height: 1.7;
+}
+.back-link {
+  display: inline-block; padding: 16px 24px; font-size: 14px;
+  color: #3b82f6; text-decoration: none;
+}
+.back-link:hover { text-decoration: underline; }
+header {
+  text-align: center; padding: 40px 24px 16px;
+}
+header h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+header p { font-size: 15px; color: #94a3b8; max-width: 600px; margin: 0 auto; }
+main {
+  max-width: 960px; margin: 0 auto; padding: 24px 24px 80px;
+  display: flex; flex-direction: column; gap: 40px;
+}
+.example h2 {
+  font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 4px;
+}
+.example > p {
+  font-size: 13px; color: #94a3b8; margin-bottom: 12px;
+}
+.terminal {
+  border-radius: 10px; overflow: hidden;
+  background: #1a1b26; border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.terminal-bar {
+  background: #24253a; padding: 10px 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.terminal-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+}
+.terminal-dot.r { background: #ff5f57; }
+.terminal-dot.y { background: #febc2e; }
+.terminal-dot.g { background: #28c840; }
+.terminal-title {
+  flex: 1; text-align: center; font-size: 12px; color: #636882;
+  font-family: 'Inter', monospace;
+}
+.terminal-body {
+  padding: 16px 20px; overflow-x: auto;
+  font-family: 'Menlo', 'Consolas', 'Noto Sans JP', monospace;
+  font-size: 13px; line-height: 1.65; color: #a9b1d6;
+  white-space: pre; tab-size: 2;
+}
+.prompt { color: #9ece6a; }
+.cmd { color: #c0caf5; font-weight: 500; }
+.flag { color: #bb9af7; }
+.str { color: #e0af68; }
+.accent { color: #7aa2f7; }
+.hl { color: #f7768e; }
+.dim { color: #636882; }
+.green { color: #9ece6a; }
+.orange { color: #ff9e64; }
+.teal { color: #73daca; }
+.heading { color: #c0caf5; font-weight: 600; }
+@media (max-width: 640px) {
+  header { padding: 24px 16px 8px; }
+  header h1 { font-size: 22px; }
+  main { padding: 16px 12px 60px; gap: 28px; }
+  .terminal-body { font-size: 11px; padding: 12px 14px; }
+}
+</style>
+</head>
+<body>
+<a class="back-link" href="../">&larr; 法脈トップに戻る</a>
+<header>
+  <h1>CLI ツールデモ</h1>
+  <p>法脈のコマンドラインツールが出力する実際のデータ。9,500法令のテキスト検索、構造化ブラウジング、読替え適用をターミナルから即座に実行。</p>
+</header>
+<main>
+
+<!-- ── Example 1: テキスト検索 ── -->
+<section class="example">
+  <h2>テキスト検索 — 9,500法令を0.3秒で横断</h2>
+  <p>ripgrep バックエンドによる AND/OR/NOT 検索。略称・ワイルドカード・動詞活用展開にも対応。</p>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot r"></span>
+      <span class="terminal-dot y"></span>
+      <span class="terminal-dot g"></span>
+      <span class="terminal-title">grep-laws</span>
+    </div>
+    <pre class="terminal-body"><span class="prompt">$</span> <span class="cmd">uv run grep-laws</span> <span class="str">"人工衛星"</span> <span class="str">"打上げ"</span> <span class="flag">--and</span>
+
+Queries: ['人工衛星', '打上げ'] (AND) [rg]
+Total matching lines: 157
+<span class="accent">20 laws found</span>
+
+<span class="heading">[77 hits] 人工衛星等の打上げ及び人工衛星の管理に関する法律</span>
+  - 第一条 （目的）
+  - 第二条 （定義）
+  - 第四条 （許可）
+  - 第六条 （許可の基準）
+  - 第九条 （損害賠償担保措置を講ずべき義務）
+  - 第十三条 （型式認定）
+  - 第二十条 （許可）
+  - 第三十五条 （無過失責任）
+  - 第三十六条 （責任の集中）
+  <span class="dim">  ... 他33条</span>
+
+<span class="heading">[14 hits] 国立研究開発法人宇宙航空研究開発機構法</span>
+  - 第四条 （機構の目的）
+  - 第十八条 （業務の範囲）
+  <span class="dim">  ... 他12条</span>
+
+<span class="heading">[12 hits] 宇宙資源の探査及び開発に関する事業活動の促進に関する法律</span>
+  <span class="dim">  ...</span>
+
+<span class="dim">他17法令</span></pre>
+  </div>
+</section>
+
+<!-- ── Example 2: 委任先フォロー ── -->
+<section class="example">
+  <h2>委任先フォロー — 「政令で定める」の先を自動解決</h2>
+  <p>条文中の「政令で定める」「省令で定める」を検出し、委任先の法令・条文を特定してインライン表示。</p>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot r"></span>
+      <span class="terminal-dot y"></span>
+      <span class="terminal-dot g"></span>
+      <span class="terminal-title">browse-law --xref --follow</span>
+    </div>
+    <pre class="terminal-body"><span class="prompt">$</span> <span class="cmd">uv run browse-law</span> <span class="str">"労基法"</span> <span class="flag">--articles</span> 37 <span class="flag">--xref</span> <span class="flag">--follow</span>
+
+<span class="heading">第三十七条（時間外、休日及び深夜の割増賃金）</span>
+<span class="accent">①</span> 使用者が、第三十三条又は前条第一項の規定により労働時間を延長し、又は
+  休日に労働させた場合においては、...通常の労働時間又は労働日の賃金の計算額の
+  二割五分以上五割以下の範囲内でそれぞれ<span class="hl">政令で定める</span>率以上の率で計算した
+  割増賃金を支払わなければならない。
+  <span class="dim">...</span>
+
+─── 参照エッジ ───
+
+  引用先 (→): 3件
+    → 第三十三条（災害等による臨時の必要がある場合の時間外労働等）
+    → 第三十六条（時間外及び休日の労働）  <span class="dim">[relative: 前条]</span>
+    → 第三十九条（年次有給休暇）
+
+    <span class="orange">⇢ 政令で定める (§1)    [委任]</span>
+      <span class="teal">→ 労働基準法第三十七条第一項の時間外及び休日の割増賃金に
+        係る率の最低限度を定める政令</span>
+
+    <span class="orange">⇢ 厚生労働省令で定める (§3,§5)</span>
+      <span class="teal">└ 労働基準法施行規則</span>
+        第十九条の二§1: 使用者は、法第三十七条第三項の協定...をする
+          場合には、次に掲げる事項を定めるものとする。
+        第二十一条§1: 法第三十七条第五項の規定によつて、家族手当
+          及び通勤手当のほか、次に掲げる賃金は、...割増賃金の
+          基礎となる賃金には算入しない。
+
+  被引用 (他法令) (←): <span class="accent">24法令</span>
+    ← [法律] 労働時間等の設定の改善に関する特別措置法 / 第七条
+    ← [法律] 地方公務員法 / 第五十八条
+    ← [政令] 労働者派遣事業の...施行令 / 第三条
+    <span class="dim">... 他21法令</span></pre>
+  </div>
+</section>
+
+<!-- ── Example 3: 読替え適用 ── -->
+<section class="example">
+  <h2>読替え適用 — 附則による条文変形を自動再現</h2>
+  <p>「Aを「B」と読み替える」規定を解析し、置換前後のテキストを対比表示。期限切れの経過措置も検出。</p>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot r"></span>
+      <span class="terminal-dot y"></span>
+      <span class="terminal-dot g"></span>
+      <span class="terminal-title">browse-law --yomikae-apply</span>
+    </div>
+    <pre class="terminal-body"><span class="prompt">$</span> <span class="cmd">uv run browse-law</span> <span class="str">"労基法"</span> <span class="flag">--articles</span> 36 <span class="flag">--yomikae-apply</span>
+
+<span class="dim">─── 附則第百三十九条 (§1)による読替え【当分の間】 ───</span>
+
+  <span class="heading">【原文】§5</span>
+  ...一箇月について労働時間を延長して労働させ、及び休日において
+  労働させることができる時間<span class="hl">（第二項第四号に関して協定した時間を
+  含め百時間未満の範囲内に限る。）</span>並びに...
+  ...（<span class="hl">同号</span>に関して協定した時間を含め七百二十時間を超えない
+  範囲内に限る。）を定めることができる。
+
+  <span class="heading">【読替後】§5</span> <span class="accent">(2箇所置換)</span>
+    <span class="hl">「時間（第二項第四号に...百時間未満の範囲内に限る。）」</span>→<span class="green">「時間」</span>
+    <span class="hl">「同号」</span>→<span class="green">「第二項第四号」</span>
+  ...一箇月について労働時間を延長して労働させ、及び休日において
+  労働させることができる<span class="green">時間</span>並びに...
+  ...（<span class="green">第二項第四号</span>に関して協定した時間を含め七百二十時間を
+  超えない範囲内に限る。）を定めることができる。
+
+  <span class="heading">【適用除外】§6</span>（第二号及び第三号に係る部分に限る。）
+    一　坑内労働その他...二時間を超えないこと。
+    二　...百時間未満であること。 <span class="hl">[適用しない]</span>
+    三　...八十時間を超えないこと。 <span class="hl">[適用しない]</span></pre>
+  </div>
+</section>
+
+<!-- ── Example 4: 法令ファミリー ── -->
+<section class="example">
+  <h2>法令ファミリー — 委任構造を一覧表示</h2>
+  <p>法律→施行令→施行規則の委任チェーンをグラフDBから自動解決。条文単位の委任先も分類。</p>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot r"></span>
+      <span class="terminal-dot y"></span>
+      <span class="terminal-dot g"></span>
+      <span class="terminal-title">browse-law --family</span>
+    </div>
+    <pre class="terminal-body"><span class="prompt">$</span> <span class="cmd">uv run browse-law</span> <span class="str">"個人情報保護法"</span> <span class="flag">--family</span>
+
+<span class="heading">[法律] 個人情報の保護に関する法律 — 法令ファミリー</span>
+
+  <span class="green">★ 本法律（法律）</span>
+    個人情報の保護に関する法律
+
+  <span class="orange">施行令（政令）: 1件</span>
+    [政令] 個人情報の保護に関する法律施行令
+
+  <span class="hl">施行規則: 3件</span>
+    [省令] 個人情報保護委員会事務局組織規則
+    [規則] 人事院規則二―一五（人事院の職員に対する個人情報の
+           取扱いに係る権限又は事務の委任）
+    [規則] 個人情報の保護に関する法律施行規則
+
+  <span class="accent">条文委任政省令: 1件</span>
+    [省令] ...施行令第二十六条第三項第一号及び第二十九条第三項
+           第一号に掲げる行政機関等が保有する保有個人情報に係る
+           開示請求及び...の手続に関する省令
+
+  <span class="dim">改正関連: 2件</span>
+    [政令] 個人情報の保護に関する法律及び行政手続における特定の
+           個人を識別するための番号の利用等に関する法律の一部を
+           改正する法律の施行に伴う関係政令の整備及び経過措置
+           に関する政令
+    <span class="dim">...</span></pre>
+  </div>
+</section>
+
+</main>
+</body>
+</html>
