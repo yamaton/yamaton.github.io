@@ -199,7 +199,7 @@ function autoFit(ns) {
    renderGraph(viewType) — main rendering function, called on view switch
    ══════════════════════════════════════════════════════════════════════ */
 function renderGraph(viewType) {
-  if (\!DATA) return;
+  if (!DATA) return;
   if (fitTimer) clearTimeout(fitTimer);
   if (sim) sim.stop();
   g.selectAll('*').remove();
@@ -316,7 +316,7 @@ function renderGraph(viewType) {
       node.on('dblclick',function(e,d){d.fx=null;d.fy=null;sim.alphaTarget(0.1).restart();});
       if (typeof _onNodeClick === 'function') {
         node.style('cursor','pointer').on('click',function(e,d){
-          if(\!d.is_input) _onNodeClick(d.label);
+          if(!d.is_input) _onNodeClick(d.label);
         });
       }
       sim.on('tick',function(){
